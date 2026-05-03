@@ -1,0 +1,6 @@
+# Firebase config (contains API keys — do not commit)
+firebase-config.js
+dist/firebase-config.js
+
+# Claude settings
+.claude/
