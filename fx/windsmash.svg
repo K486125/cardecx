@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  바람 스매시(wind) — cards.js의 cast: 'windsmash'
+  기준점(타워 중심) = (420, 200) · 전체 길이 0.4초 · 피해는 0.2초에 들어간다
+
+  앞으로 두 타일(200px) 길이의 일자 사거리를 후려친다.
+  왼쪽에서 오른쪽으로 공기가 밀려와 타워 자리에서 터진다.
+
+  도형처럼 보이지 않게 하는 것:
+   1) #tear  — feTurbulence + feDisplacementMap으로 바람 자락을 찢는다
+   2) 3층 밝기 — 하얀 심지 / 청록 테두리 / 번지는 빛
+   3) 진행 방향(가로)으로만 번지는 모션블러 — 세로로 번지면 안개처럼 보인다
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 400" width="560" height="400">
+  <defs>
+    <linearGradient id="coreG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="30%"  stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="70%"  stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="rimG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#8ff0e0" stop-opacity="0"/>
+      <stop offset="35%"  stop-color="#c9fff6" stop-opacity="0.85"/>
+      <stop offset="72%"  stop-color="#e6fffb" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7fe6d6" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="haloG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#4fd8c4" stop-opacity="0"/>
+      <stop offset="55%"  stop-color="#63e4d0" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#4fd8c4" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="burstG">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="34%"  stop-color="#d6fff8" stop-opacity="0.5"/>
+      <stop offset="72%"  stop-color="#63e4d0" stop-opacity="0"/>
+    </radialGradient>
+
+    <filter id="tear" x="-90%" y="-90%" width="280%" height="280%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012 0.05" numOctaves="3" seed="11" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="12" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="tear2" x="-90%" y="-90%" width="280%" height="280%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02 0.075" numOctaves="2" seed="23" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="17" xChannelSelector="R" yChannelSelector="G"/>
+      <feGaussianBlur stdDeviation="2.5"/>
+    </filter>
+    <filter id="halo" x="-90%" y="-90%" width="280%" height="280%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <!-- 진행 방향(가로)으로만 번진다 -->
+    <filter id="smear" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="9 1.6"/>
+    </filter>
+
+    <style>
+      .c { transform-box: view-box; transform-origin: 420px 200px; }
+
+      .gust  { animation: gust  0.4s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+      .gust2 { animation: gust  0.4s cubic-bezier(0.2, 0.8, 0.3, 1) both; animation-delay: 0.045s; }
+      .gust3 { animation: gust  0.4s cubic-bezier(0.2, 0.8, 0.3, 1) both; animation-delay: 0.085s; }
+      .burst { animation: burst 0.28s ease-out both; animation-delay: 0.16s; }
+      .ring  { animation: ring  0.3s  cubic-bezier(0.1, 0.75, 0.3, 1) both; animation-delay: 0.17s; }
+
+      /* 공기가 왼쪽에서 밀려와 타워 자리를 지나친다 */
+      @keyframes gust {
+        0%   { opacity: 0;   transform: translateX(-190px) scaleX(0.45); }
+        22%  { opacity: 1;   }
+        68%  { opacity: 0.9; transform: translateX(26px) scaleX(1.06); }
+        100% { opacity: 0;   transform: translateX(72px) scaleX(1.15); }
+      }
+      @keyframes burst {
+        0%   { opacity: 0; transform: scale(0.3); }
+        26%  { opacity: 1; transform: scale(1);   }
+        100% { opacity: 0; transform: scale(1.4); }
+      }
+      /* 부딪힌 자리에서 퍼지는 고리 — 세로로 눌러 후려친 느낌 */
+      @keyframes ring {
+        0%   { opacity: 0;   transform: scale(0.18, 0.1); }
+        30%  { opacity: 0.9; }
+        100% { opacity: 0;   transform: scale(1.1, 0.72); }
+      }
+    </style>
+  </defs>
+
+  <!-- ── 번지는 빛 ────────────────────────────────────────── -->
+  <g class="c gust3" filter="url(#halo)" opacity="0.55">
+    <path d="M150,200 C230,158 330,158 430,182 C330,206 230,214 150,200 Z" fill="url(#haloG)"/>
+  </g>
+
+  <!-- ── 뒤따르는 잔상 ────────────────────────────────────── -->
+  <g class="c gust2" filter="url(#tear2)" opacity="0.55">
+    <path d="M150,200 C240,166 340,164 436,188 C340,208 240,216 150,200 Z" fill="url(#rimG)"/>
+    <path d="M176,236 C260,222 348,220 424,228 C346,244 258,248 176,236 Z" fill="url(#rimG)" opacity="0.7"/>
+  </g>
+
+  <!-- ── 본 자락 ──────────────────────────────────────────── -->
+  <g class="c gust" filter="url(#tear)">
+    <!-- 청록 테두리 -->
+    <path d="M152,200 C244,168 344,166 438,190 C344,210 244,218 152,200 Z" fill="url(#rimG)"/>
+    <!-- 하얀 심지 -->
+    <path d="M186,198 C264,176 344,175 424,192 C344,204 264,210 186,198 Z" fill="url(#coreG)" filter="url(#smear)"/>
+    <!-- 갈라진 두 번째·세 번째 자락 -->
+    <path d="M198,150 C272,132 348,132 420,148 C348,160 272,164 198,150 Z" fill="url(#rimG)" opacity="0.8"/>
+    <path d="M198,250 C272,238 348,238 420,250 C348,262 272,266 198,250 Z" fill="url(#rimG)" opacity="0.7"/>
+    <!-- 가늘게 스치는 결 -->
+    <g stroke="#e6fffb" fill="none" stroke-linecap="round" opacity="0.7">
+      <path d="M214,176 C286,164 352,164 414,174" stroke-width="3"/>
+      <path d="M214,224 C286,216 352,216 414,224" stroke-width="2.6"/>
+      <path d="M232,200 C296,192 356,192 410,198" stroke-width="2"/>
+    </g>
+  </g>
+
+  <!-- ── 부딪힌 자리 ──────────────────────────────────────── -->
+  <!-- 가로로 납작하게 — 동그란 테두리는 충격이 아니라 그냥 원으로 보인다 -->
+  <ellipse class="c ring" cx="420" cy="202" rx="150" ry="62" fill="none"
+           stroke="#c9fff6" stroke-width="6" filter="url(#tear)" opacity="0.75"/>
+  <circle  class="c burst" cx="420" cy="200" r="120" fill="url(#burstG)"/>
+</svg>

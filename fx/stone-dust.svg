@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  돌가루 — 바위 지옥(rock_hell)의 지속 피해가 한 번 들어갈 때마다 타워에서 튄다.
+  기준점(타워 중심) = (110, 110) · 전체 길이 0.6초
+
+  착지 연출(stone-impact.svg)의 작은 판이다. 같은 규칙을 따른다:
+   1) #grit  — feTurbulence + feDisplacementMap으로 알갱이 테두리를 깎는다
+   2) 낮게 눌린 먼지 — 바닥에서 튀는 것이라 세로로 눌러야 땅에 붙어 보인다
+   3) 알갱이가 제각각 — 방향·거리·크기·도는 속도가 모두 다르다
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" width="220" height="220">
+  <defs>
+    <radialGradient id="puffGrad">
+      <stop offset="0%"   stop-color="#cfcabf" stop-opacity="0"/>
+      <stop offset="58%"  stop-color="#cfcabf" stop-opacity="0.26"/>
+      <stop offset="88%"  stop-color="#a9a49a" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#8f8a80" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gritGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#c6cad3"/>
+      <stop offset="60%"  stop-color="#878d9a"/>
+      <stop offset="100%" stop-color="#4f545e"/>
+    </linearGradient>
+
+    <filter id="grit" x="-80%" y="-80%" width="260%" height="260%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.11" numOctaves="2" seed="61" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="puffBlur" x="-90%" y="-90%" width="280%" height="280%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.05 0.09" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="10" xChannelSelector="R" yChannelSelector="G"/>
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+
+    <style>
+      .c    { transform-box: view-box; transform-origin: 110px 110px; }
+      .puff { animation: puff 0.55s cubic-bezier(0.12, 0.75, 0.3, 1) both; }
+
+      /* 낮게 퍼지는 먼지 — 세로로 눌러 바닥에 붙인다 */
+      @keyframes puff {
+        0%   { opacity: 0;   transform: scale(0.16, 0.1);  }
+        22%  { opacity: 0.9; }
+        100% { opacity: 0;   transform: scale(1.02, 0.58); }
+      }
+
+      .g  { transform-box: view-box; transform-origin: 110px 110px;
+            animation-timing-function: cubic-bezier(0.15, 0.7, 0.35, 1); animation-fill-mode: both; }
+      .g1 { animation: g1 0.5s;  } .g2 { animation: g2 0.46s; }
+      .g3 { animation: g3 0.56s; } .g4 { animation: g4 0.48s; }
+      .g5 { animation: g5 0.52s; } .g6 { animation: g6 0.44s; }
+      .g7 { animation: g7 0.58s; }
+
+      /* 알갱이마다 튀어 올랐다 떨어진다 */
+      @keyframes g1 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.4)} 14%{opacity:1}
+                      46%{transform:translate(-34px,-40px) rotate(-130deg) scale(0.9)}
+                      100%{opacity:0;transform:translate(-62px,8px) rotate(-250deg) scale(0.7)} }
+      @keyframes g2 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.42)} 14%{opacity:1}
+                      45%{transform:translate(30px,-46px) rotate(150deg) scale(0.95)}
+                      100%{opacity:0;transform:translate(56px,10px) rotate(290deg) scale(0.68)} }
+      @keyframes g3 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.34)} 16%{opacity:1}
+                      48%{transform:translate(-52px,-18px) rotate(-90deg) scale(0.8)}
+                      100%{opacity:0;transform:translate(-84px,20px) rotate(-200deg) scale(0.58)} }
+      @keyframes g4 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.38)} 14%{opacity:1}
+                      44%{transform:translate(48px,-22px) rotate(120deg) scale(0.85)}
+                      100%{opacity:0;transform:translate(78px,16px) rotate(240deg) scale(0.6)} }
+      @keyframes g5 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.3)} 16%{opacity:1}
+                      46%{transform:translate(-10px,-56px) rotate(-170deg) scale(0.75)}
+                      100%{opacity:0;transform:translate(-18px,-4px) rotate(-310deg) scale(0.52)} }
+      @keyframes g6 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.32)} 14%{opacity:1}
+                      44%{transform:translate(14px,-52px) rotate(130deg) scale(0.78)}
+                      100%{opacity:0;transform:translate(26px,2px) rotate(250deg) scale(0.5)} }
+      @keyframes g7 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.26)} 18%{opacity:1}
+                      50%{transform:translate(-40px,-6px) rotate(-60deg) scale(0.62)}
+                      100%{opacity:0;transform:translate(-70px,26px) rotate(-150deg) scale(0.44)} }
+    </style>
+  </defs>
+
+  <!-- ── 낮게 퍼지는 먼지 ─────────────────────────────────── -->
+  <ellipse class="c puff" cx="110" cy="116" rx="86" ry="86" fill="url(#puffGrad)" filter="url(#puffBlur)"/>
+
+  <!-- ── 튀는 알갱이 ──────────────────────────────────────── -->
+  <g filter="url(#grit)">
+    <polygon class="g g1" points="104,104 118,102 121,114 108,118"
+             fill="url(#gritGrad)" stroke="#24272e" stroke-width="2" stroke-linejoin="round"/>
+    <polygon class="g g2" points="106,106 119,107 117,118 105,116"
+             fill="url(#gritGrad)" stroke="#24272e" stroke-width="2" stroke-linejoin="round"/>
+    <polygon class="g g3" points="103,108 115,104 119,115 106,118"
+             fill="url(#gritGrad)" stroke="#24272e" stroke-width="1.8" stroke-linejoin="round"/>
+    <polygon class="g g4" points="105,103 118,108 114,117 104,113"
+             fill="url(#gritGrad)" stroke="#24272e" stroke-width="1.8" stroke-linejoin="round"/>
+    <polygon class="g g5" points="106,107 116,105 119,115 108,117"
+             fill="url(#gritGrad)" stroke="#24272e" stroke-width="1.6" stroke-linejoin="round"/>
+    <polygon class="g g6" points="104,106 115,108 113,116 103,114"
+             fill="url(#gritGrad)" stroke="#24272e" stroke-width="1.6" stroke-linejoin="round"/>
+    <polygon class="g g7" points="107,109 115,108 116,115 107,114"
+             fill="url(#gritGrad)" stroke="#24272e" stroke-width="1.4" stroke-linejoin="round"/>
+  </g>
+</svg>

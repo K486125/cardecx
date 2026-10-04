@@ -4,245 +4,234 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cardecx — 게임</title>
+  <!-- 웹폰트 먼저: Material Symbols의 기본 font-size(24px)를 프로젝트 CSS가 덮어쓰도록 -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=ac_unit,castle,check_circle,crown,explosion,health_and_safety,playing_cards,shield,smart_toy,swords,timer,visibility" />
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/lobby.css" />
   <link rel="stylesheet" href="css/game.css" />
   <link rel="stylesheet" href="css/cards.css" />
   <link rel="stylesheet" href="css/animations.css" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=ac_unit,castle,crown,explosion,health_and_safety,playing_cards,shield,swords,timer,visibility" />
 </head>
 <body>
 
 <!-- ═══════════════════════════════════════════════════
      대기실 화면
 ════════════════════════════════════════════════════ -->
-<div id="screen-waiting" class="screen active">
-  <div class="waiting-card">
-    <h1 class="logo"><span class="material-symbols-outlined logo-icon">playing_cards</span> Cardecx</h1>
-    <h2 data-i18n="waitingRoom">Waiting Room</h2>
+<div id="screen-waiting" class="screen hidden">
+  <div class="panel-surface waiting-panel">
 
-    <div class="room-code-box">
-      <span class="room-code-label" data-i18n="roomCode">Room Code</span>
-      <span id="display-room-code" class="room-code-value">------</span>
-      <button id="btn-copy-code" class="btn-icon" title="Copy">📋</button>
+    <!-- 상단: 방 코드 -->
+    <div class="panel-row panel-row-top">
+      <span class="room-code-inline">
+        <span class="room-code-label" data-i18n="roomCode">방 코드</span>
+        <span id="display-room-code" class="room-code-value">------</span>
+      </span>
+      <button id="btn-copy-code" class="waiting-copy-btn" title="코드 복사">복사</button>
     </div>
 
-    <div class="player-slots">
-      <div class="player-slot filled" id="slot-p1">
-        <span class="slot-role">P1</span>
-        <span id="name-p1" class="slot-name">—</span>
-        <span class="slot-badge" data-i18n="hostBadge">Host</span>
+    <!-- 중앙: 플레이어 카드 2장 (거의 맞붙어 있음) -->
+    <div class="waiting-center">
+      <div class="player-card" id="pcard-me">
+        <div class="player-avatar"></div>
+        <span id="name-me" class="player-card-name">—</span>
+        <span id="ready-me" class="player-ready-state" data-i18n="notReady">준비 중</span>
       </div>
-      <div class="player-slot" id="slot-p2">
-        <span class="slot-role">P2</span>
-        <span id="name-p2" class="slot-name">Waiting...</span>
+      <div class="player-card" id="pcard-enemy">
+        <div id="avatar-enemy" class="player-avatar player-avatar-unknown">?</div>
+        <span id="name-enemy" class="player-card-name" data-i18n="waitingSlot">대기 중...</span>
+        <span id="ready-enemy" class="player-ready-state" data-i18n="notReady">준비 중</span>
+        <button id="btn-bot-level" class="bot-level-btn hidden" title="AI 난이도 바꾸기"></button>
       </div>
     </div>
 
-    <div class="player-count">
-      <span id="display-player-count">1</span> / 2
+    <!-- 하단: 좌 나가기 / 우 게임 준비 -->
+    <div class="panel-row panel-row-bottom">
+      <button id="btn-leave-room" class="waiting-btn waiting-btn-leave" data-i18n="leaveRoom">나가기</button>
+      <button id="btn-ready" class="waiting-btn waiting-btn-ready" data-i18n="readyBtn" disabled>게임 준비</button>
     </div>
 
-    <button id="btn-start-game" class="btn btn-primary hidden" disabled data-i18n="startGame">
-      Start Game (2/2 needed)
-    </button>
-
-    <p id="msg-waiting-p2" class="waiting-msg hidden" data-i18n="waitForHost">Waiting for the host to start...</p>
-
-    <button id="btn-leave-room" class="btn btn-danger" data-i18n="leaveRoom">Leave Room</button>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════
      로딩 화면
 ════════════════════════════════════════════════════ -->
-<div id="screen-loading" class="screen hidden">
-  <div class="loading-content">
-    <h1 class="loading-title"><span class="material-symbols-outlined loading-logo-icon">playing_cards</span> Cardecx</h1>
-    <div class="loading-bar-wrap">
-      <div id="loading-bar" class="loading-bar-fill"></div>
-      <span id="loading-pct" class="loading-pct-text">0%</span>
+<div id="screen-loading" class="screen active">
+  <!-- 480×480 고정 캔버스 — 통째로 scale 하므로 확대/축소해도 깨지지 않는다 (loading.js) -->
+  <div class="loading-stage">
+    <h1 class="loading-title"><span class="material-symbols-outlined loading-logo-icon">playing_cards</span>Cardecx</h1>
+    <div id="loading-ring" class="loading-ring" style="--p: 0">
+      <div class="loading-ring-track"></div>
+      <div class="loading-ring-spin"></div>
+      <div class="loading-ring-core">
+        <span id="loading-pct" class="loading-pct-text">0%</span>
+      </div>
     </div>
+    <p id="loading-message" class="loading-message hidden"></p>
   </div>
 </div>
+<script>
+  // 첫 그림부터 제자리·제 진행률로 — 스크립트가 다 받아지기 전에 크기 맞춤과
+  // 앞 페이지에서 넘겨받은 진행률·문구를 바로 적용한다 (0%로 튀거나 크기가 바뀌지 않도록)
+  (function () {
+    var stage = document.querySelector('.loading-stage');
+    var s = Math.min(Math.min(window.innerWidth, window.innerHeight) / 480 * 0.92, 1.6);
+    if (stage) stage.style.transform = 'translate(-50%, -50%) scale(' + s.toFixed(3) + ')';
+    try {
+      var h = JSON.parse(sessionStorage.getItem('_loader') || 'null');
+      if (h) {
+        document.getElementById('loading-ring').style.setProperty('--p', h.from);
+        document.getElementById('loading-pct').textContent = h.from + '%';
+        var m = document.getElementById('loading-message');
+        if (h.message) { m.textContent = h.message; m.classList.remove('hidden'); }
+      }
+    } catch (e) {}
+    if (stage) stage.classList.add('ready');
+  })();
+</script>
 
 <!-- ═══════════════════════════════════════════════════
      인게임 화면
 ════════════════════════════════════════════════════ -->
 <div id="screen-game" class="screen hidden">
+  <!-- 1600×900 고정 스테이지 — game.js initZoom()이 뷰포트에 맞춰 scale 한다.
+       내부는 전부 px 고정이라 확대/축소해도 리플로우가 일어나지 않는다. -->
 
-  <!-- ══ 상단 HUD (적 정보) ══════════════════════════════════ -->
-  <div class="top-hud">
-    <!-- 1행: 에너지 + 이름/뱃지 + 왕관 -->
-    <div class="top-hud-row1">
-      <div class="hud-energy-wrap">
-        <span id="enemy-energy-value" class="hud-energy-num enemy-energy-num">—</span>
-        <div class="hud-energy-bar-track">
-          <div id="enemy-energy-bar" class="hud-energy-bar-fill enemy-fill" style="width:100%"></div>
-        </div>
-      </div>
-      <div class="hud-player-block enemy-block">
-        <div class="hud-name-row">
-          <span id="card-panel-enemy-name" class="hud-player-name enemy-name">—</span>
-          <span id="enemy-freeze-icon" class="freeze-icon hidden material-symbols-outlined">ac_unit</span>
-        </div>
-        <div class="hud-clan-row">
-          <span id="enemy-clan-text" class="hud-clan-text">타이틀 없음</span>
-        </div>
-      </div>
-      <div class="hud-crowns">
-        <span class="material-symbols-outlined hud-crown-icon">crown</span>
-        <span id="enemy-crown-count" class="hud-crown-num">0</span>
-      </div>
+  <!-- ══ 상단 바: 좌 나 / 중앙 타이머 / 우 상대 ══════════════ -->
+  <div class="game-topbar">
+    <div class="topbar-side topbar-me">
+      <span id="card-panel-my-name" class="hud-player-name my-name">—</span>
+      <span id="my-freeze-icon" class="freeze-icon hidden material-symbols-outlined">ac_unit</span>
     </div>
-    <!-- 2행: 미니 덱 -->
-    <div class="top-hud-row2">
-      <span class="hud-mini-label">다음:</span>
-      <div id="hud-enemy-deck-slots" class="hud-mini-slots">
-        <div class="hud-mini-slot"></div>
-        <div class="hud-mini-slot"></div>
-        <div class="hud-mini-slot"></div>
-        <div class="hud-mini-slot"></div>
-        <div class="hud-mini-slot"></div>
-      </div>
-    </div>
-  </div>
 
-  <!-- ══ 게임 맵 (전체 영역) ════════════════════════════════ -->
-  <div class="game-map">
-
-    <!-- 적 타워 존 (위) -->
-    <div class="enemy-zone">
-      <div class="tower-column enemy-column">
-
-        <div class="tower enemy-tower" id="tower-enemy-left" data-owner="enemy" data-pos="left">
-          <div class="tower-billboard">
-            <div class="hp-bar-wrap"><div class="hp-bar" id="hpbar-enemy-left"></div></div>
-            <div class="hp-text" id="hptext-enemy-left">300/300</div>
-          </div>
-          <div class="tower-block"><div class="tower-body"><span class="material-symbols-outlined tower-icon">castle</span><span class="material-symbols-outlined tower-defense-badge">shield</span><span class="tower-nightmare-badge">😱</span><span class="tower-doom-seal-badge">🔱</span><span class="tower-mirror-badge">🪞</span><span class="tower-heal-reduction-badge">🐍</span></div></div>
-          <div class="dot-indicator" id="dot-enemy-left"></div>
-        </div>
-
-        <div class="tower enemy-tower king-tower" id="tower-enemy-king" data-owner="enemy" data-pos="king">
-          <div class="speech-bubble upper-bubble" id="bubble-enemy-king-upper"></div>
-          <div class="speech-bubble" id="bubble-enemy-king"></div>
-          <div class="tower-billboard">
-            <div class="hp-bar-wrap"><div class="hp-bar" id="hpbar-enemy-king"></div></div>
-            <div class="hp-text" id="hptext-enemy-king">1500/1500</div>
-          </div>
-          <div class="tower-block"><div class="tower-body"><span class="material-symbols-outlined tower-icon">crown</span><span class="material-symbols-outlined tower-defense-badge">shield</span><span class="tower-nightmare-badge">😱</span><span class="tower-doom-seal-badge">🔱</span><span class="tower-mirror-badge">🪞</span><span class="tower-heal-reduction-badge">🐍</span></div></div>
-          <div class="dot-indicator" id="dot-enemy-king"></div>
-        </div>
-
-        <div class="tower enemy-tower" id="tower-enemy-right" data-owner="enemy" data-pos="right">
-          <div class="tower-billboard">
-            <div class="hp-bar-wrap"><div class="hp-bar" id="hpbar-enemy-right"></div></div>
-            <div class="hp-text" id="hptext-enemy-right">300/300</div>
-          </div>
-          <div class="tower-block"><div class="tower-body"><span class="material-symbols-outlined tower-icon">castle</span><span class="material-symbols-outlined tower-defense-badge">shield</span><span class="tower-nightmare-badge">😱</span><span class="tower-doom-seal-badge">🔱</span><span class="tower-mirror-badge">🪞</span><span class="tower-heal-reduction-badge">🐍</span></div></div>
-          <div class="dot-indicator" id="dot-enemy-right"></div>
-        </div>
-
-      </div>
-    </div><!-- /.enemy-zone -->
-
-    <!-- 구분선 (강) -->
-    <div class="zone-divider"></div>
-
-    <!-- 내 타워 존 (아래) -->
-    <div class="my-zone">
-      <div class="tower-column my-column">
-
-        <div class="tower my-tower" id="tower-my-left" data-owner="my" data-pos="left">
-          <div class="tower-billboard">
-            <div class="hp-bar-wrap"><div class="hp-bar" id="hpbar-my-left"></div></div>
-            <div class="hp-text" id="hptext-my-left">300/300</div>
-          </div>
-          <div class="tower-block"><div class="tower-body"><span class="material-symbols-outlined tower-icon">castle</span><span class="material-symbols-outlined tower-defense-badge">shield</span><span class="tower-nightmare-badge">😱</span><span class="tower-doom-seal-badge">🔱</span><span class="tower-mirror-badge">🪞</span><span class="tower-heal-reduction-badge">🐍</span></div></div>
-          <div class="dot-indicator" id="dot-my-left"></div>
-        </div>
-
-        <div class="tower my-tower king-tower" id="tower-my-king" data-owner="my" data-pos="king">
-          <div class="speech-bubble upper-bubble" id="bubble-my-king-upper"></div>
-          <div class="speech-bubble" id="bubble-my-king"></div>
-          <div class="tower-billboard">
-            <div class="hp-bar-wrap"><div class="hp-bar" id="hpbar-my-king"></div></div>
-            <div class="hp-text" id="hptext-my-king">1500/1500</div>
-          </div>
-          <div class="tower-block"><div class="tower-body"><span class="material-symbols-outlined tower-icon">crown</span><span class="material-symbols-outlined tower-defense-badge">shield</span><span class="tower-nightmare-badge">😱</span><span class="tower-doom-seal-badge">🔱</span><span class="tower-mirror-badge">🪞</span><span class="tower-heal-reduction-badge">🐍</span></div></div>
-          <div class="dot-indicator" id="dot-my-king"></div>
-        </div>
-
-        <div class="tower my-tower" id="tower-my-right" data-owner="my" data-pos="right">
-          <div class="tower-billboard">
-            <div class="hp-bar-wrap"><div class="hp-bar" id="hpbar-my-right"></div></div>
-            <div class="hp-text" id="hptext-my-right">300/300</div>
-          </div>
-          <div class="tower-block"><div class="tower-body"><span class="material-symbols-outlined tower-icon">castle</span><span class="material-symbols-outlined tower-defense-badge">shield</span><span class="tower-nightmare-badge">😱</span><span class="tower-doom-seal-badge">🔱</span><span class="tower-mirror-badge">🪞</span><span class="tower-heal-reduction-badge">🐍</span></div></div>
-          <div class="dot-indicator" id="dot-my-right"></div>
-        </div>
-
-      </div>
-    </div><!-- /.my-zone -->
-
-    <!-- 맵 중앙 타이머 + 관전자 오버레이 -->
-    <div class="chat-center-overlay">
+    <div class="topbar-center">
       <div id="spectator-count" class="spectator-count hidden">
         <span class="material-symbols-outlined spectator-eye-icon">visibility</span>
         <span id="spectator-count-num">0</span>
+      </div>
+      <!-- 타이머 좌: 내가 부순 타워 수 / 우: 상대가 부순 타워 수 -->
+      <div class="hud-crowns crowns-me" title="내가 부순 타워">
+        <span class="material-symbols-outlined hud-crown-icon">crown</span>
+        <span id="my-crown-count" class="hud-crown-num">0</span>
       </div>
       <div id="match-timer-wrap" class="match-timer-wrap">
         <span class="material-symbols-outlined timer-icon-inline">timer</span>
         <span id="match-timer-display" class="match-timer-display">4:00</span>
         <span id="countdown-display" class="countdown-display"></span>
       </div>
+      <div class="hud-crowns crowns-enemy" title="상대가 부순 타워">
+        <span id="enemy-crown-count" class="hud-crown-num">0</span>
+        <span class="material-symbols-outlined hud-crown-icon">crown</span>
+      </div>
+    </div>
+
+    <div class="topbar-side topbar-enemy">
+      <span id="enemy-freeze-icon" class="freeze-icon hidden material-symbols-outlined">ac_unit</span>
+      <span id="card-panel-enemy-name" class="hud-player-name enemy-name">—</span>
+      <div class="hud-energy-wrap enemy-energy-wrap">
+        <div class="hud-energy-bar-track">
+          <div id="enemy-energy-bar" class="hud-energy-bar-fill enemy-fill" style="width:100%"></div>
+        </div>
+        <span id="enemy-energy-value" class="hud-energy-num enemy-energy-num">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 게임 필드: 16×9 타일 맵 ═══════════════════════════
+       타일 한 칸 100px · 맵 1600×900 · 화면(612px)보다 세로로 길어서
+       휠 드래그(가운데 버튼)나 휠 스크롤로 움직여 본다 (board.js initMapPan) -->
+  <div class="game-map">
+    <div class="map-viewport" id="map-viewport">
+      <div class="tile-map" id="tile-map">
+        <!-- 바닥판 — 이 겹만 원근으로 눕는다. 타워·이펙트는 눕지 않고 그대로 서 있는다
+             (타일 좌표계는 그대로라서 조준·사거리 계산은 전혀 영향을 받지 않는다) -->
+        <div class="ground" id="ground">
+          <div class="tile-grid" id="tile-grid"></div>
+          <div class="zone-divider"></div>
+          <div class="ground-depth"></div>
+          <!-- 사거리 표시가 그려지는 곳 — 바닥판 안이라 타일과 같은 원근을 먹는다
+               (js/board.js의 _castGround) -->
+          <div class="cast-ground" id="cast-ground"></div>
+        </div>
+
+        <!-- 내 타워 (왼쪽) — style의 --col/--row가 타일 좌표 -->
+        <div class="tower my-tower" id="tower-my-left" data-owner="my" data-pos="left" style="--col: 4; --row: 2;">
+            <div class="tower-hp" id="hptext-my-left">300</div>
+            <div class="tower-block"><div class="tower-body"><span class="material-symbols-outlined tower-icon">castle</span><span class="material-symbols-outlined tower-defense-badge">shield</span><span class="tower-nightmare-badge">😱</span><span class="tower-doom-seal-badge">🔱</span><span class="tower-mirror-badge">🪞</span><span class="tower-heal-reduction-badge">🐍</span></div></div>
+            <div class="dot-indicator" id="dot-my-left"></div>
+        </div>
+        <div class="tower my-tower king-tower" id="tower-my-king" data-owner="my" data-pos="king" style="--col: 3; --row: 4;">
+          <div class="speech-bubble upper-bubble" id="bubble-my-king-upper"></div>
+            <div class="speech-bubble" id="bubble-my-king"></div>
+            <div class="tower-hp" id="hptext-my-king">1500</div>
+            <div class="tower-block"><div class="tower-body"><span class="material-symbols-outlined tower-icon">crown</span><span class="material-symbols-outlined tower-defense-badge">shield</span><span class="tower-nightmare-badge">😱</span><span class="tower-doom-seal-badge">🔱</span><span class="tower-mirror-badge">🪞</span><span class="tower-heal-reduction-badge">🐍</span></div></div>
+            <div class="dot-indicator" id="dot-my-king"></div>
+        </div>
+        <div class="tower my-tower" id="tower-my-right" data-owner="my" data-pos="right" style="--col: 4; --row: 6;">
+            <div class="tower-hp" id="hptext-my-right">300</div>
+            <div class="tower-block"><div class="tower-body"><span class="material-symbols-outlined tower-icon">castle</span><span class="material-symbols-outlined tower-defense-badge">shield</span><span class="tower-nightmare-badge">😱</span><span class="tower-doom-seal-badge">🔱</span><span class="tower-mirror-badge">🪞</span><span class="tower-heal-reduction-badge">🐍</span></div></div>
+            <div class="dot-indicator" id="dot-my-right"></div>
+        </div>
+
+        <!-- 적 타워 (오른쪽) -->
+        <div class="tower enemy-tower" id="tower-enemy-left" data-owner="enemy" data-pos="left" style="--col: 11; --row: 2;">
+            <div class="tower-hp" id="hptext-enemy-left">300</div>
+            <div class="tower-block"><div class="tower-body"><span class="material-symbols-outlined tower-icon">castle</span><span class="material-symbols-outlined tower-defense-badge">shield</span><span class="tower-nightmare-badge">😱</span><span class="tower-doom-seal-badge">🔱</span><span class="tower-mirror-badge">🪞</span><span class="tower-heal-reduction-badge">🐍</span></div></div>
+            <div class="dot-indicator" id="dot-enemy-left"></div>
+        </div>
+        <div class="tower enemy-tower king-tower" id="tower-enemy-king" data-owner="enemy" data-pos="king" style="--col: 12; --row: 4;">
+          <div class="speech-bubble upper-bubble" id="bubble-enemy-king-upper"></div>
+            <div class="speech-bubble" id="bubble-enemy-king"></div>
+            <div class="tower-hp" id="hptext-enemy-king">1500</div>
+            <div class="tower-block"><div class="tower-body"><span class="material-symbols-outlined tower-icon">crown</span><span class="material-symbols-outlined tower-defense-badge">shield</span><span class="tower-nightmare-badge">😱</span><span class="tower-doom-seal-badge">🔱</span><span class="tower-mirror-badge">🪞</span><span class="tower-heal-reduction-badge">🐍</span></div></div>
+            <div class="dot-indicator" id="dot-enemy-king"></div>
+        </div>
+        <div class="tower enemy-tower" id="tower-enemy-right" data-owner="enemy" data-pos="right" style="--col: 11; --row: 6;">
+            <div class="tower-hp" id="hptext-enemy-right">300</div>
+            <div class="tower-block"><div class="tower-body"><span class="material-symbols-outlined tower-icon">castle</span><span class="material-symbols-outlined tower-defense-badge">shield</span><span class="tower-nightmare-badge">😱</span><span class="tower-doom-seal-badge">🔱</span><span class="tower-mirror-badge">🪞</span><span class="tower-heal-reduction-badge">🐍</span></div></div>
+            <div class="dot-indicator" id="dot-enemy-right"></div>
+        </div>
+
+        <!-- 이펙트 레이어 — 타일 맵 안에 있어 맵과 함께 움직인다 -->
+        <div id="fx-layer" class="fx-layer"></div>
+      </div>
+    </div>
+
+    <!-- 필드 중앙 오버레이 (오버타임 문구) — 화면에 고정 -->
+    <div class="field-center-overlay">
       <div id="overtime-message" class="overtime-message"></div>
     </div>
+  </div>
 
-  </div><!-- /.game-map -->
-
-  <!-- ══ 하단 HUD (내 정보) ════════════════════════════════ -->
+  <!-- ══ 하단 HUD: 좌 에너지 / 중앙 덱 5칸 / 우 카드 선택 3장 ══ -->
   <div class="bottom-hud">
 
-    <!-- 플레이어 정보 (상단) -->
-    <div class="bottom-player-row">
-      <div class="hud-crowns">
-        <span class="material-symbols-outlined hud-crown-icon">crown</span>
-        <span id="my-crown-count" class="hud-crown-num">0</span>
-      </div>
-      <div class="hud-player-block my-block">
-        <div class="hud-name-row">
-          <span id="card-panel-my-name" class="hud-player-name my-name">—</span>
-          <span id="my-freeze-icon" class="freeze-icon hidden material-symbols-outlined">ac_unit</span>
+    <!-- 에너지 -->
+    <div class="hud-left">
+      <div class="bottom-energy-row energy-row">
+        <div class="energy-orb">
+          <span id="energy-value" class="hud-energy-num my-energy-num">100</span>
         </div>
-        <div class="hud-clan-row">
-          <span id="my-clan-text" class="hud-clan-text">타이틀 없음</span>
+        <div class="energy-col">
+          <span class="energy-caption">ENERGY</span>
+          <div class="energy-bar-wrap">
+            <div id="energy-bar" class="energy-bar my-fill" style="width:100%"></div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 제공 카드 -->
-    <div class="offer-section">
-      <div class="offer-header">
-        <span class="section-label" id="offer-label" data-i18n="offerLabelEnemy">Opponent's turn...</span>
-      </div>
-      <div class="offer-cards" id="offer-cards">
-        <div class="offer-placeholder" data-i18n="offerPlaceholderWaiting">Waiting for cards...</div>
-      </div>
-      <div id="deck-full-msg" class="deck-full-msg hidden" data-i18n="deckFullMsg">Use a card from your deck first</div>
-    </div>
-
-    <!-- 덱 슬롯 -->
+    <!-- 덱 슬롯 (가로 중앙) -->
     <div class="deck-area-wrapper">
       <div class="deck-slots-wrap">
-        <div class="deck-slots" id="deck-slots">
-          <div class="deck-slot" data-slot="0"></div>
-          <div class="deck-slot" data-slot="1"></div>
-          <div class="deck-slot" data-slot="2"></div>
-          <div class="deck-slot" data-slot="3"></div>
-          <div class="deck-slot" data-slot="4"></div>
+          <div id="deck-replace-banner" class="deck-replace-banner hidden"></div>
+      <div class="deck-slots" id="deck-slots">
+          <div class="deck-slot" data-slot="0" data-key="Q"></div>
+          <div class="deck-slot" data-slot="1" data-key="W"></div>
+          <div class="deck-slot" data-slot="2" data-key="E"></div>
+          <div class="deck-slot" data-slot="3" data-key="R"></div>
+          <div class="deck-slot" data-slot="4" data-key="T"></div>
         </div>
         <div id="deck-freeze-overlay" class="deck-freeze-overlay hidden">
           <span class="material-symbols-outlined">ac_unit</span>
@@ -251,12 +240,15 @@
       </div>
     </div>
 
-    <!-- 에너지 바 (덱 바로 아래, 가로) -->
-    <div class="bottom-energy-row energy-row">
-      <span id="energy-value" class="hud-energy-num my-energy-num">100</span>
-      <div class="energy-bar-wrap">
-        <div id="energy-bar" class="energy-bar my-fill" style="width:100%"></div>
+    <!-- 카드 선택 3장 -->
+    <div class="offer-section">
+      <div class="offer-header">
+        <span class="section-label" id="offer-label" data-i18n="offerLabelWaiting">Waiting for cards...</span>
       </div>
+      <div class="offer-cards" id="offer-cards">
+        <div class="offer-placeholder" data-i18n="offerPlaceholderWaiting">Waiting for cards...</div>
+      </div>
+      <div id="deck-full-msg" class="deck-full-msg hidden" data-i18n="deckFullMsg">Use a card from your deck first</div>
     </div>
 
   </div><!-- /.bottom-hud -->
@@ -313,6 +305,31 @@
   </div>
 </div>
 
+<!-- 스크립트 일부가 받아지지 않으면(네트워크 끊김 등) 반쯤 로드된 화면에 멈추지 않도록 로비로 -->
+<script>
+  window.__bootFailed = false;
+  window.addEventListener('error', function (e) {
+    // 게임 자체 파일(이 사이트 · Firebase SDK)만 본다 — 로그인 SDK가 스스로 추가로 불러오는
+    // 구글 스크립트(apis.google.com)는 광고 차단기 등에 막혀도 게임과 무관하다
+    var t = e.target;
+    if (!t || t.tagName !== 'SCRIPT' || !t.src) return;
+    if (t.src.indexOf(location.origin + '/') === 0 || t.src.indexOf('https://www.gstatic.com/firebasejs/') === 0) {
+      window.__bootFailed = true;
+    }
+  }, true);
+  window.addEventListener('load', function () {
+    if (!window.__bootFailed) return;
+    alert('게임을 불러오지 못했습니다. 로비로 이동합니다.');
+    location.replace('index.html');
+  });
+  // game.js가 끝내 시작하지 않으면(오래된 캐시 파일과 섞임 등) 0% 로딩에 멈추지 않도록 로비로
+  setTimeout(function () {
+    if (window.__gameBooted || window.__bootFailed) return;
+    alert('게임을 불러오지 못했습니다. 로비로 이동합니다.');
+    location.replace('index.html');
+  }, 12000);
+</script>
+
 <!-- 방 코드 즉시 표시 / 관전자 즉시 로딩 화면 -->
 <script>
   (function() {
@@ -321,48 +338,48 @@
     var role = p.get('player');
     var isSpectate = p.get('spectate') === 'true';
 
-    if (isSpectate) {
-      // 관전자: 즉시 로딩 화면으로 전환 (대기실 화면 숨김)
-      document.querySelectorAll('.screen').forEach(function(s) {
-        s.classList.add('hidden');
-        s.classList.remove('active');
-      });
-      var loading = document.getElementById('screen-loading');
-      if (loading) { loading.classList.remove('hidden'); loading.classList.add('active'); }
-      return;
-    }
-
-    if (code) document.getElementById('display-room-code').textContent = code;
-    if (role === 'p1') {
-      document.getElementById('btn-start-game').classList.remove('hidden');
-      document.getElementById('msg-waiting-p2').classList.add('hidden');
-    } else if (role === 'p2') {
-      document.getElementById('btn-start-game').classList.add('hidden');
-      document.getElementById('msg-waiting-p2').classList.remove('hidden');
-    }
+    // 첫 화면은 로딩 — 대기실은 방 정보·폰트가 준비된 뒤 game.js가 보여준다.
+    // 방 코드만 미리 채워 둔다.
+    if (code && !isSpectate) document.getElementById('display-room-code').textContent = code;
   })();
 </script>
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <!-- App scripts -->
 <script src="firebase-config.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/i18n.js"></script>
 <script>applyI18n();</script>
 <script src="js/cards.js"></script>
-<script src="js/codex.js"></script>
+<script src="js/dev.js"></script>
 <script src="js/sync.js"></script>
+<!-- 타워 3D — three.js는 로컬에 두고 쓴다 (판정은 DOM 그대로, 이건 그림만) -->
+<script src="js/vendor/three.min.js"></script>
+<script src="js/seasky.js"></script>
+<script src="js/towers3d.js"></script>
+<script src="js/reaper3d.js"></script>
 <script src="js/board.js"></script>
+<script src="js/units.js"></script>
 <script src="js/energy.js"></script>
 <script src="js/deck.js"></script>
 <script src="js/turns.js"></script>
 <script src="js/effects.js"></script>
 <script src="js/win.js"></script>
+<script src="js/bot.js"></script>
+<script src="js/loading.js"></script>
+<script src="js/transition.js"></script>
+<script src="js/presence.js"></script>
 <script src="js/room.js"></script>
+<!-- 접속 중 생존 신호 — 온라인 수에서 유령을 빼는 기준 -->
+<script src="js/online.js"></script>
 <script src="js/game.js"></script>
+<!-- 연결이 끈기면 안내를 띄운다 -->
+<script src="js/netstate.js"></script>
 
 <!-- 게임 화면 전용: 확대/축소 방지 -->
 <script>

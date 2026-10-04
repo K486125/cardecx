@@ -48,7 +48,8 @@ const GRADE_EMOJI = {
  *   shieldDecay      → { rate, interval(ms) }  보호막 초당 자동 감소
  *   immunity         → { duration(ms) }  피해 면역
  *   damageAmp        → { percent, duration(ms) }  받는 피해 증폭 (적 타워 디버프)
- *   deckFreeze       → { duration(ms) }  덱 사용 금지
+ *   deckFreeze       → { duration(ms) }  덱 사용 금지 (모든 카드)
+ *   freeze           → { duration(ms) }  타워 동결 — 얼어 있는 동안만 그 카드의 지속 피해가 들어간다 (얼음전개)
  *   percentDrain     → { damagePercent, healPercent }  현재 HP % 피해 + 킹 힐
  *   energyBurst      → { perTick, ticks, interval(ms) }  에너지 폭발 충전
  *   healReduction    → { percent, duration(ms) }  힐량 감소 디버프
@@ -57,7 +58,10 @@ const GRADE_EMOJI = {
 const CARD_DEFINITIONS = {
 
   // ── 일반 ───────────────────────────────────────────────
+  // cast: 카드를 고르면 카드 대신 사거리(부채꼴)가 마우스를 따라다니고,
+  //       클릭하면 휘두르는 연출이 끝나는 순간 피해가 들어간다 (board.js CAST_STYLES)
   wooden_sword: {
+    cast: 'sword',
     id: 'wooden_sword',
     name: '목검',
     icon: '🗡️',
@@ -65,10 +69,12 @@ const CARD_DEFINITIONS = {
     energyCost: 1,
     type: 'attack',
     targeting: 'single',
-    effect: { damage: 10 },
-    desc: '단일 대상 10 피해'
+    effect: { damage: 12 },
+    desc: '단일 대상 12 피해'
   },
+  // 투척 — 꾹 눌러 차징하면 더 아프고 더 빠르게 날아간다 (board.js CAST_STYLES.stone)
   rock: {
+    cast: 'stone',
     id: 'rock',
     name: '돌',
     icon: '🪨',
@@ -76,21 +82,27 @@ const CARD_DEFINITIONS = {
     energyCost: 2,
     type: 'attack',
     targeting: 'single',
-    effect: { damage: 25 },
-    desc: '단일 대상 25 피해'
+    effect: { damage: 20 },
+    desc: '2×2칸 범위 20 피해 · Space로 차면 최대 40 · 셀수록 빠르게 날아간다 (차징 없이는 느리다) · 쇄빙: 언 타워에 30% 더 들어가고 얼음이 깨져 동결이 바로 풀린다'
   },
+  // 바람 스매시 — 앞으로 두 타일 길이의 일자 사거리, 타워 하나만 친다.
+  // 피해와 함께 상대 에너지를 5 깎는다 (board.js CAST_STYLES.windsmash)
   wind: {
+    cast: 'windsmash',
     id: 'wind',
     name: '바람',
     icon: '🌬️',
     grade: 'common',
     energyCost: 2,
     type: 'attack',
-    targeting: 'range2',
-    effect: { dot: { dmgPerTick: 6, ticks: 3, tickInterval: 1000 } },
-    desc: '범위(2) 3초간 매초 6 피해 (총 18)'
+    targeting: 'single',
+    effect: { damage: 24, energyDrain: 5 },
+    desc: '단일 24 피해 · 상대 에너지 -5 · 상성: 상대 토템(숲의정령·흰꽃)이 더 가까우면 토템을 쳐 남은 시간 -2초 (2초 이하로 남았으면 무너진다) — 단일이라 토템과 타워 중 하나만'
   },
+  // 지진 — 3×3칸 범위. 0.7초 땅울림 뒤 3초 동안 칸이 무너지며 1초마다 11 피해.
+  // 범위에 닿은 타워는 전부 맞는다 (board.js CAST_STYLES.quake — 지연 0.7초가 거기서 온다)
   earthquake: {
+    cast: 'quake',
     id: 'earthquake',
     name: '지진',
     icon: '💥',
@@ -98,10 +110,13 @@ const CARD_DEFINITIONS = {
     energyCost: 3,
     type: 'attack',
     targeting: 'range2',
-    effect: { dot: { dmgPerTick: 6, ticks: 4, tickInterval: 1000 } },
-    desc: '범위(2) 4초간 매초 6 피해 (총 24)'
+    effect: { dot: { dmgPerTick: 9, ticks: 3, tickInterval: 1000 } },
+    desc: '3×3칸 범위 · 땅울림 0.7초 뒤 3초간 매초 9 피해 (총 27) · 상성: 범위 안 상대 토템의 남은 시간 -2초 (2초 이하로 남았으면 무너지고 회복도 멈춘다) · 쇄빙: 언 타워에 30% 더 들어가고 얼음이 깨져 동결이 바로 풀린다'
   },
+  // 화살 — 커서에서 앞으로 3칸 길이·1칸 폭의 일자 사거리. 화살이 날아가다 처음 닿는 타워 하나를 맞힌다.
+  // Space로 최대 2초 차징: 21 → 39. 차징과 관계없이 사거리 끝까지 1.2초 (board.js CAST_STYLES.arrow)
   arrow: {
+    cast: 'arrow',
     id: 'arrow',
     name: '화살',
     icon: '🏹',
@@ -109,12 +124,13 @@ const CARD_DEFINITIONS = {
     energyCost: 3,
     type: 'attack',
     targeting: 'single',
-    effect: { dot: { dmgPerTick: 7, ticks: 5, tickInterval: 1000 } },
-    desc: '단일 5초간 매초 7 피해 (총 35)'
+    effect: { damage: 21 },
+    desc: '일자 3칸 · 처음 닿는 타워 21 피해 · Space로 차면 최대 39 · 내 진영에서 쏘면 왼쪽으로 날아가 길에 선 상대 유닛(그림리퍼)만 맞힌다'
   },
 
   // ── 진화 (일반 등급 카드 5회 사용 후 변환) ────────────
   dual_sword: {
+    cast: 'dualsword',
     id: 'dual_sword',
     name: '듀얼 검',
     icon: '⚔️',
@@ -122,54 +138,72 @@ const CARD_DEFINITIONS = {
     energyCost: 1,
     type: 'attack',
     targeting: 'single',
+    // 돌진(연출 0.5초)이 꽂히는 순간 14, 그 뒤 / 베기 0.3초 뒤 8, \ 베기 다시 0.3초 뒤 8 (2026-10-01 밸런스: 44 → 30)
     effect: {
+      damage: 14,
       dot: [
-        { dmgPerTick: 15, ticks: 2, tickInterval: 500 },
-        { dmgPerTick: 10, ticks: 3, tickInterval: 1000 }
+        { dmgPerTick: 8, ticks: 1, tickInterval: 300 },
+        { dmgPerTick: 8, ticks: 1, tickInterval: 600 }
       ]
     },
-    desc: '단일 0.5초마다 15 피해(2회) + 1초마다 10 피해(3회) (총 60)',
+    desc: '단일 돌진 14 피해 + X 베기 8+8 (총 30) · 상성: 상대 토템(숲의정령·흰꽃)이 더 가까우면 토템을 베어 없앤다 — 단일이라 토템과 타워 중 하나만',
     isEvolution: true
   },
+  // 돌의 진화 — 차징 없이 한 번에 세 덩이를 던진다.
+  // 타워마다 도착 시간·피해·돌가루가 다르다 (board.js CAST_STYLES.stonehell.shots가 진짜 값)
   rock_hell: {
+    cast: 'stonehell',
     id: 'rock_hell',
     name: '바위 지옥',
-    icon: '<span class="evo-compound-icon">🪨<span class="devil-chip">😈</span></span>',
-    grade: 'common',
-    energyCost: 2,
-    type: 'attack',
-    targeting: 'range2',
-    effect: { dot: { dmgPerTick: 11, ticks: 5, tickInterval: 1000 } },
-    desc: '범위(2) 1초마다 11 피해(5회, 총 55)',
-    isEvolution: true
-  },
-  strong_wind: {
-    id: 'strong_wind',
-    name: '강풍 주의',
-    icon: '🍃',
-    grade: 'common',
-    energyCost: 2,
-    type: 'attack',
-    targeting: 'range3',
-    effect: { dot: { dmgPerTick: 7, ticks: 7, tickInterval: 1000 } },
-    desc: '범위(3) 1초마다 7 피해(7회, 총 49)',
-    isEvolution: true
-  },
-  doom_fragment: {
-    id: 'doom_fragment',
-    name: '파멸 조각',
-    icon: '🧩',
+    icon: '😈',
     grade: 'common',
     energyCost: 3,
     type: 'attack',
     targeting: 'range3',
-    effect: { damage: 67 },
-    desc: '범위(3) 즉시 67 피해',
+    effect: { damage: 30, dot: { dmgPerTick: 5, ticks: 3, tickInterval: 600 } },
+    desc: '상대 타워 셋에 한 덩이씩 · 14 / 18 / 22 피해 + 돌가루 3회 (부서진 타워 몫은 킹에 절반) · 쇄빙: 언 타워에 30% 더 들어가고 얼음이 깨져 동결이 바로 풀린다',
     isEvolution: true
   },
-  cupid_arrow: {
-    id: 'cupid_arrow',
-    name: '큐피트 화살',
+  // 바람의 진화 — 내 진영 타일에 설치하면 작은 소용돌이가 점점 커지고 빨라지며
+  // 일자로 전진해 타워를 친다. 멀리서 올수록 크고 빠르고 아프다.
+  // 실제 값은 board.js CAST_STYLES.tornado가 계산한다 (설치한 타일에 따라 달라진다)
+  tornado: {
+    cast: 'tornado',
+    id: 'tornado',
+    name: '토네이도',
+    icon: '🌪️',
+    grade: 'common',
+    energyCost: 3,
+    type: 'attack',
+    targeting: 'range2',
+    effect: { damage: 20 },
+    desc: '내 진영 타일에 설치 · 전진하며 타워 타격 (멀리서 올수록 강함) · 닿는 줄의 상대 토템(숲의정령·흰꽃)을 날려 버린다 (2초간 새 토템도 날아감)',
+    isEvolution: true
+  },
+  // 붕괴 — 지진의 진화 (예전 '파멸 조각'을 대신한다). 3칸 폭으로 맵 세로 전체가 범위라
+  // 타워 셋에 다 닿을 수 있다. 0.5초 땅울림 뒤 즉시 55 피해.
+  // 범위 안의 토템을 모두 무너뜨리고(회복도 멈춘다), 2초 동안은 새로 세운 토템도 곧바로 무너진다
+  // (board.js CAST_STYLES.collapse)
+  collapse: {
+    cast: 'collapse',
+    id: 'collapse',
+    name: '붕괴',
+    icon: '🏚️',
+    grade: 'common',
+    energyCost: 3,
+    type: 'attack',
+    targeting: 'range3',
+    effect: { damage: 25 },
+    desc: '3칸 폭 세로 범위 · 땅울림 0.5초 뒤 즉시 25 피해 · 범위 안 토템 파괴 (2초간 새 토템도 무너짐) · 쇄빙: 언 타워에 30% 더 들어가고 얼음이 깨져 동결이 바로 풀린다',
+    isEvolution: true
+  },
+  // 사랑의 화살 — 화살의 진화 (예전 '큐피드 화살'). 차징 없이 1초 만에 일자 3칸을 날아간다.
+  // 내 진영에서 쏘면 내 타워 쪽(왼쪽)으로, 상대 진영에서 쏘면 상대 타워 쪽으로 날아간다.
+  // 내 타워: 하트가 그려지며 80 회복 / 적 타워: 하트가 깨지며 즉시 70 피해 (board.js CAST_STYLES.lovearrow)
+  love_arrow: {
+    cast: 'lovearrow',
+    id: 'love_arrow',
+    name: '사랑의 화살',
     icon: '💘',
     grade: 'common',
     energyCost: 3,
@@ -177,69 +211,157 @@ const CARD_DEFINITIONS = {
     targeting: 'single',
     effect: {
       dualEffect: {
-        attack:  { dot: { dmgPerTick: 12, ticks: 5, tickInterval: 1000 } },
-        support: { heal: 100 }
+        attack:  { damage: 70 },
+        support: { heal: 80 }
       }
     },
-    desc: '적 타워: 1초마다 12 피해(5회, 총 60) / 내 타워: 즉시 100 치유',
+    desc: '일자 3칸 · 상대 진영: 하트가 깨지며 즉시 70 피해 (길의 상대 유닛도) / 내 진영에서 쏘면 회복만: 하트가 그려지며 80 회복',
     isEvolution: true
   },
 
-  // ── 희귀 ───────────────────────────────────────────────
-  flame: {
-    id: 'flame',
-    name: '불꽃',
-    icon: '🔥',
-    grade: 'rare',
-    energyCost: 5,
-    type: 'attack',
-    targeting: 'range2',
-    effect: { damage: 30, dot: { dmgPerTick: 5, ticks: 3, tickInterval: 1000 } },
-    desc: '범위(2) 즉시 -30 피해 + 3초간 매초 5 피해'
-  },
-  wave: {
-    id: 'wave',
+  // ── 희귀 진화 ─────────────────────────────────────────
+  // 파도 — 침수의 진화 (2026-10-01 리워크). 아무 열에나 놓으면(2026-10-02) 3칸 폭 파도가 상대 진영 끝까지 밀려가며
+  // 그 안에 든 대상에게 0.5초마다 22. 실제 피해는 board.js castWavePlan이 정한다 (아래 effect는 AI의 값 셈용)
+  wave_evo: {
+    id: 'wave_evo',
     name: '파도',
     icon: '🌊',
     grade: 'rare',
-    energyCost: 7,
+    energyCost: 12,
     type: 'attack',
     targeting: 'range3',
-    effect: { damage: 50 },
-    desc: '범위(3) 50 피해'
+    cast: 'wave',
+    effect: { dot: { dmgPerTick: 22, ticks: 3, tickInterval: 500 } },
+    desc: '아무 열에나 놓으면 3칸 폭 파도가 상대 진영 끝까지 밀려가며, 파도 안에 든 상대 대상에게 0.5초마다 22 피해 · 지나간 자리의 불을 끈다 · 파도가 닿는 동안 젖은 쪽의 회복(벚꽃·흰꽃·숲의정령)이 50% 늘어난다',
+    isEvolution: true
   },
-  thorn: {
-    id: 'thorn',
-    name: '가시',
-    icon: '🌵',
+  // 폭염 — 불덩이의 진화 (2026-10-02 리워크, 예전 '불꽃'). 3×7칸 범위.
+  // 폭발 49 → 불타는 동안 0.5초마다 9 × 5 → 열기(더위) 6초: 그 칸의 대상은 모든 카드 피해 +15%.
+  // 범위가 타워 셋을 다 덮는 일이 많아(실효 282 + 더위) 기력 7 → 20 (card-balance 기준 희귀 진화 ~14/기력)
+  // 실제 시각·피해는 board.js castHeatwavePlan (아래 effect는 AI 값 셈 · 유닛 피해용)
+  fire_evo: {
+    id: 'fire_evo',
+    name: '폭염',
+    icon: '🎇',
     grade: 'rare',
-    energyCost: 10,
+    energyCost: 20,
     type: 'attack',
     targeting: 'single',
-    effect: { dot: { dmgPerTick: 11, ticks: 6, tickInterval: 1000 } },
-    desc: '단일 6초간 매초 11 피해 (총 66)'
+    cast: 'heatwave',
+    effect: { damage: 49, dot: { dmgPerTick: 9, ticks: 5, tickInterval: 500 } },
+    desc: '3×7칸 범위에 화염 폭발 49 피해 → 범위 안 대상이 불타며 0.5초마다 9 피해 5회 → 이어서 6초 동안 열기가 올라와 그 칸의 모든 대상(타워·소환 유닛)이 더위 상태로 모든 카드 피해를 15% 더 받고 회복은 25% 덜 받는다 · 힐 밴: 범위 안 상대 토템이 타 버리고, 열기 속 토템은 말라 비틀어진다 · 내가 얼린 상대 타워는 폭염 피해 없이 얼음이 다 녹아 동결이 풀리고, 녹은 물이 3×3칸에 3초 동안 고인다 (젖음 — 감전 · 그 동안 상대 회복 +50%) · 불길이 타는 동안 그 자리에 세운 상대 토템도 재가 된다 · 물이 닿으면 불과 열기가 꺼진다',
+    isEvolution: true
   },
+  // 철벽 — 벽돌의 진화. 벽돌처럼 내 타워 칸에 놓으면 강철 방벽이 타워를 둘러싼다 (2026-10-02).
+  // 직선 공격(sync.js LINE_ATTACK_CARDS)은 80%, 그 밖의 범위 공격은 50% 막는다. 직선 80%가 세서 기력 10 → 12
   iron_wall: {
     id: 'iron_wall',
     name: '철벽',
     icon: '🛡️',
     grade: 'rare',
-    energyCost: 11,
+    energyCost: 12,
     type: 'defense',
     targeting: 'single',
-    effect: { damageReduction: { percent: 30, duration: 5000 } },
-    desc: '단일 5초간 받는 피해 30% 감소'
+    cast: 'ironwall',
+    effect: { damageReduction: { percent: 50, linePercent: 80, duration: 8000 } },
+    desc: '내 타워 칸에 놓으면 강철 방벽이 8초 동안 직선 공격(화살·목검·듀얼 검·바람·토네이도·톱·파도) 피해 80%, 그 밖의 범위 공격 피해 50% 감소. 한 타워에 방어막은 하나 — 또 놓으면 8초 연장',
+    isEvolution: true
+  },
+  // 톱 — 가시의 진화 (2026-10-03 리워크). 커서 가까이의 가장 가까운 대상 하나 — 클릭하면 바로 끝까지 저절로 썬다 (차징 · 게이지 없음).
+  // 0.5초마다 7. 토템이면 반토막 낸다. 실제 피해는 board.js 톱(_sawTick)이 넣는다 (아래 effect는 AI의 값 셈용)
+  thorn_evo: {
+    id: 'thorn_evo',
+    name: '톱',
+    icon: '🪚',
+    grade: 'rare',
+    energyCost: 6,
+    type: 'attack',
+    targeting: 'single',
+    cast: 'saw',
+    effect: { dot: { dmgPerTick: 7, ticks: 12, tickInterval: 500 } },
+    desc: '커서 가까이의 대상 하나(강조됨)를 클릭하면 바로 그쪽에서 다가가 썬다 — 타워는 6초 동안 0.5초마다 7 피해 (총 84) · 상성: 상대 토템(숲의정령·흰꽃)은 반토막 나 쓰러진다 (회복도 멈춘다 · 톱은 거기서 끝)',
+    isEvolution: true
+  },
+  cherry_blossom_evo: {
+    cast: 'whiteblossom',
+    id: 'cherry_blossom_evo',
+    name: '흰꽃',
+    icon: '💮',
+    grade: 'rare',
+    energyCost: 14,
+    type: 'heal',
+    targeting: 'range3',
+    effect: { hot: { healPerTick: 12, ticks: 5, tickInterval: 1000 } },
+    desc: '범위(3) 1초마다 12 치유(5회, 총 60)',
+    isEvolution: true
+  },
+
+  // ── 희귀 ───────────────────────────────────────────────
+  // 불덩이 (2026-10-02 리워크, 예전 '불') — 돌처럼 던지는데 떨어지는 자리는 가시처럼 2×2칸 (칸 네 개가 만나는 점).
+  // 떨어지는 순간 28, 불길 속에서 0.5초마다 6 × 5. 기력 5에 58 (희귀 ~11.6/기력 — 기준 그대로라 버프 없음)
+  flame: {
+    id: 'flame',
+    name: '불덩이',
+    icon: '🔥',
+    grade: 'rare',
+    energyCost: 5,
+    type: 'attack',
+    targeting: 'single',
+    cast: 'fireball',
+    effect: { damage: 28, dot: { dmgPerTick: 6, ticks: 5, tickInterval: 500 } },
+    desc: '2×2칸 범위로 불덩이를 던진다. 떨어지는 순간 28 피해, 이어서 불길 속에서 0.5초마다 6 피해 5회 (총 58) · 힐 밴: 범위 안 상대 토템에 불이 붙어 타 버린다 · 내가 얼린 상대 타워에 떨어지면 불덩이 피해가 절반으로 들어가고 얼음이 반쯤 녹아 남은 동결 피해 50% 감소 · 타는 동안 그 자리에 세운 상대 토템도 재가 된다 · 물(침수·파도)이 닿으면 꺼진다'
+  },
+  // 침수 — 물방울 리워크 (2026-10-01). 4×10칸 범위를 물이 위에서 아래로 1초 만에 쓸고 간다.
+  // 물살이 닿는 순간 30, 다 흐른 뒤 잠긴 대상은 3초 동안 0.5초마다 5. 실제 시각은 board.js castFloodPlan
+  wave: {
+    id: 'wave',
+    name: '침수',
+    icon: '💧',
+    grade: 'rare',
+    energyCost: 14,
+    type: 'attack',
+    targeting: 'range3',
+    cast: 'flood',
+    effect: { damage: 30, dot: { dmgPerTick: 5, ticks: 6, tickInterval: 500 } },
+    desc: '아무 진영에나 놓는다. 4×10칸 범위에 물이 위에서 아래로 쏟아져 닿는 상대 대상에 30 피해, 이어서 잠긴 대상은 반쯤 가라앉아 3초 동안 0.5초마다 5 피해 · 닿은 불을 끈다 · 침수당하는 동안 젖은 쪽의 회복(벚꽃·흰꽃·숲의정령)이 50% 늘어난다 — 내 진영에 쓰면 내 회복이 는다'
+  },
+  // 가시 (2026-10-01 리워크) — 2×2칸. 타워 밑에서 가시가 튀어나와 박힌다
+  thorn: {
+    id: 'thorn',
+    name: '가시',
+    icon: '🌵',
+    grade: 'rare',
+    energyCost: 7,
+    type: 'attack',
+    targeting: 'single',
+    cast: 'thorn',
+    effect: { damage: 45, dot: { dmgPerTick: 7, ticks: 4, tickInterval: 500 } },
+    desc: '2×2칸 범위. 땅에서 가시가 튀어나와 45 피해, 박힌 채로 0.5초마다 7 피해 4회 (총 73) · 상성: 범위 안 상대 토템(숲의정령·흰꽃)은 산산조각 나고, 가시가 박혀 있는 동안 그 자리에 세운 토템도 부서진다'
+  },
+  // 벽돌 — 내 타워 칸 하나에 놓으면 타워를 얇은 벽돌 방어막이 둘러싼다 (2026-10-02). 막는 방식은 그대로 40% · 6초
+  brick: {
+    id: 'brick',
+    name: '벽돌',
+    icon: '🧱',
+    grade: 'rare',
+    energyCost: 8,
+    type: 'defense',
+    targeting: 'single',
+    cast: 'brickwall',
+    effect: { damageReduction: { percent: 40, duration: 6000 } },
+    desc: '내 타워 칸에 놓으면 타워를 둘러싼 벽돌 방어막이 6초 동안 받는 피해 40% 감소. 한 타워에 방어막은 하나 — 또 놓으면 6초 연장'
   },
   cherry_blossom: {
+    cast: 'blossom',
     id: 'cherry_blossom',
     name: '벚꽃',
     icon: '🌸',
     grade: 'rare',
-    energyCost: 12,
+    energyCost: 9,
     type: 'heal',
     targeting: 'single',
-    effect: { hot: { healPerTick: 11, ticks: 5, tickInterval: 1000 } },
-    desc: '단일 5초간 매초 11 치유 (총 55)'
+    effect: { hot: { healPerTick: 15, ticks: 5, tickInterval: 1000 } },
+    desc: '단일 5초간 매초 15 치유 (총 75)'
   },
 
   // ── 에픽 ───────────────────────────────────────────────
@@ -251,21 +373,11 @@ const CARD_DEFINITIONS = {
     energyCost: 15,
     type: 'attack',
     targeting: 'range3',
-    effect: { dot: { dmgPerTick: 14, ticks: 4, tickInterval: 1000 } },
-    desc: '범위(3) 4초간 매초 14 피해 (총 56)'
-  },
-  tornado: {
-    id: 'tornado',
-    name: '토네이도',
-    icon: '🌪️',
-    grade: 'epic',
-    energyCost: 15,
-    type: 'attack',
-    targeting: 'single',
-    effect: { dot: { dmgPerTick: 15, ticks: 5, tickInterval: 1000 } },
-    desc: '단일 5초간 매초 15 피해 (총 75)'
+    effect: { dot: { dmgPerTick: 12, ticks: 4, tickInterval: 1000 } },
+    desc: '범위(3) 4초간 매초 12 피해 (총 48) · 감전: 물(침수·파도 · 폭염에 녹은 얼음물)에 젖은 타워는 50% 더'
   },
   forest_spirit: {
+    cast: 'forest',
     id: 'forest_spirit',
     name: '숲의정령',
     icon: '🌳',
@@ -273,19 +385,8 @@ const CARD_DEFINITIONS = {
     energyCost: 20,
     type: 'heal',
     targeting: 'range3',
-    effect: { hot: { healPerTick: 24, ticks: 5, tickInterval: 1000 } },
-    desc: '범위(3) 5초간 매초 24 치유 (총 120)'
-  },
-  shadow_shield: {
-    id: 'shadow_shield',
-    name: '그림자실드',
-    icon: '🌑',
-    grade: 'epic',
-    energyCost: 20,
-    type: 'defense',
-    targeting: 'single',
-    effect: { shield: 75, shieldDecay: { rate: 5, interval: 1000 } },
-    desc: '단일 보호막 75 부여 (초당 5씩 자동 감소, 중첩 불가)'
+    effect: { hot: { healPerTick: 15, ticks: 5, tickInterval: 1000 } },
+    desc: '범위(3) 5초간 매초 15 치유 (총 75)'
   },
   starlight_burst: {
     id: 'starlight_burst',
@@ -310,6 +411,25 @@ const CARD_DEFINITIONS = {
     desc: '5초간 매초 에너지 10 충전 (에너지 바 주황색)'
   },
 
+  // ── 에픽 진화 ─────────────────────────────────────────
+  starlight_burst_evo: {
+    id: 'starlight_burst_evo',
+    name: '별똥별',
+    icon: '🌠',
+    grade: 'epic',
+    energyCost: 20,
+    type: 'attack',
+    targeting: 'range3',
+    effect: {
+      dot: [
+        { dmgPerTick: 12, ticks: 5, tickInterval: 500 },
+        { dmgPerTick: 27, ticks: 1, tickInterval: 2000 }
+      ]
+    },
+    desc: '범위(3) 0.5초마다 12 피해(5회, 총 60) + 2초 후 즉발 27 피해 | 특성: 사용 중 모든 어택 카드 피해 +20%',
+    isEvolution: true
+  },
+
   // ── 신화 ───────────────────────────────────────────────
   black_hole: {
     id: 'black_hole',
@@ -319,30 +439,33 @@ const CARD_DEFINITIONS = {
     energyCost: 25,
     type: 'attack',
     targeting: 'range3',
-    effect: { dot: { dmgPerTick: 30, ticks: 5, tickInterval: 1000 } },
-    desc: '범위(3) 5초간 매초 30 피해 (총 150)'
+    effect: { dot: { dmgPerTick: 14, ticks: 5, tickInterval: 1000 } },
+    desc: '범위(3) 5초간 매초 14 피해 (총 70)'
   },
   nightmare: {
     id: 'nightmare',
     name: '악몽',
     icon: '😱',
     grade: 'mythic',
-    energyCost: 25,
+    energyCost: 22,
     type: 'control',
     targeting: 'range3',
-    effect: { damageAmp: { percent: 30, duration: 10000 } },
-    desc: '범위(3) 적 타워 받는 피해 30% 증가 (10초)'
+    effect: { damageAmp: { percent: 35, duration: 8000 } },
+    desc: '범위(3) 적 타워 받는 피해 35% 증가 (8초)'
   },
+  // 얼음전개 (2026-10-02 리워크) — 4×4칸을 얼린다 (board.js CAST_STYLES.icefield · castIcePlan).
+  // 언 타워는 10초 동안 1초마다 12 (실효 2타워 240) + 상대 덱 10초 동결 + 유닛 기절이라 기력 30 → 40
   ice_deploy: {
     id: 'ice_deploy',
     name: '얼음전개',
     icon: '❄️',
     grade: 'mythic',
-    energyCost: 30,
+    energyCost: 40,
     type: 'control',
     targeting: 'single',
-    effect: { deckFreeze: { duration: 7000 } },
-    desc: '상대방 카드 덱 7초간 사용 금지'
+    cast: 'icefield',
+    effect: { freeze: { duration: 10000 }, dot: { dmgPerTick: 12, ticks: 10, tickInterval: 1000 }, deckFreeze: { duration: 10000 } },
+    desc: '4×4칸 범위의 모든 대상을 얼린다 — 타워는 밑동부터 꼭대기까지 얼음이 차올라 10초 동안 1초마다 12 피해, 언 타워가 있으면 상대 카드 덱 10초 동결 (어떤 카드도 못 쓴다). 바닥 얼음은 타워가 다 얼면 사라진다. 소환 유닛은 그동안 기절'
   },
   viper: {
     id: 'viper',
@@ -353,22 +476,22 @@ const CARD_DEFINITIONS = {
     type: 'attack',
     targeting: 'single',
     effect: {
-      damage: 100,
+      damage: 120,
       dot: { dmgPerTick: 20, ticks: 5, tickInterval: 1000 },
       healReduction: { percent: 20, duration: 5000 }
     },
-    desc: '단일 즉시 100 피해 + 1초마다 20 피해(5회) + 대상 힐량 20% 감소(5초)'
+    desc: '단일 즉시 120 피해 + 1초마다 20 피해(5회) + 대상 힐량 20% 감소(5초)'
   },
   mirror: {
     id: 'mirror',
     name: '반사',
     icon: '🪞',
     grade: 'mythic',
-    energyCost: 35,
+    energyCost: 30,
     type: 'defense',
     targeting: 'single',
-    effect: { reflect: { percent: 70, duration: 5000 } },
-    desc: '단일 5초간 받은 피해 최초 1회 70% 추가하여 적 킹에 반사'
+    effect: { reflect: { percent: 80, duration: 6000 } },
+    desc: '단일 6초간 받은 피해 최초 1회 80% 추가하여 적 킹에 반사'
   },
 
   // ── 전설 ───────────────────────────────────────────────
@@ -380,41 +503,30 @@ const CARD_DEFINITIONS = {
     energyCost: 50,
     type: 'attack',
     targeting: 'single',
-    effect: { dot: { dmgPerTick: 55, ticks: 5, tickInterval: 1000 } },
-    desc: '단일 5초간 매초 55 피해 (총 275)'
+    effect: { dot: { dmgPerTick: 70, ticks: 5, tickInterval: 1000 } },
+    desc: '단일 5초간 매초 70 피해 (총 350)'
   },
   safe_zone: {
     id: 'safe_zone',
     name: '안전지대',
     icon: '✨',
     grade: 'legendary',
-    energyCost: 50,
+    energyCost: 40,
     type: 'defense',
     targeting: 'range3',
     effect: { immunity: { duration: 5000 } },
     desc: '범위(3) 5초간 모든 피해 면역'
-  },
-  celestial_wings: {
-    id: 'celestial_wings',
-    name: '천상의날개',
-    icon: '🪶',
-    grade: 'legendary',
-    energyCost: 50,
-    type: 'defense',
-    targeting: 'range3',
-    effect: { shield: 200, shieldDecay: { rate: 5, interval: 1000 } },
-    desc: '범위(3) 보호막 200 부여 (초당 5씩 자동 감소, 중첩 불가)'
   },
   doom_seal: {
     id: 'doom_seal',
     name: '파멸의낙인',
     icon: '🔱',
     grade: 'legendary',
-    energyCost: 50,
+    energyCost: 40,
     type: 'control',
     targeting: 'single',
-    effect: { damageAmp: { percent: 100, duration: 5000 } },
-    desc: '단일 5초간 적 타워 받는 피해 100% 증가'
+    effect: { damageAmp: { percent: 100, duration: 6000 } },
+    desc: '단일 6초간 적 타워 받는 피해 100% 증가'
   },
 
   // ── 비밀 ───────────────────────────────────────────────
@@ -426,38 +538,63 @@ const CARD_DEFINITIONS = {
     energyCost: 80,
     type: 'attack',
     targeting: 'range3',
-    effect: { damage: 200 },
-    desc: '상대 타워 3개 전부에 즉시 200 피해 (총 600)'
+    effect: { damage: 220 },
+    desc: '상대 타워 3개 전부에 즉시 220 피해 (총 660)'
   },
   grim_reaper: {
     id: 'grim_reaper',
     name: '그림리퍼',
     icon: '💀',
+    // 카드 면 전체 그림 (원본: 프로젝트 루트 Grim_Reaper1.png — 테두리 안쪽만 잘라 카드 비율로 줄인 것)
+    art: 'img/cards/grim_reaper2.jpg',
     grade: 'secret',
     energyCost: 80,
     type: 'attack',
     targeting: 'single',
-    effect: { percentDrain: { damagePercent: 50, healPercent: 50 } },
-    desc: '단일 적 타워 현재 체력의 50% 즉각 피해, 피해량의 50% 내 킹 타워 회복'
+    // 소환 유닛 — 카드를 쓰면 두 화면에 컷씬이 뜨고(게임 시간 정지), 필드에 리퍼가 선다 (js/units.js · js/reaper3d.js)
+    cast: 'reaper',
+    effect: { summon: { unit: 'reaper', hp: 200, damage: 67, interval: 4000, maxSouls: 10, ghostDamage: 10 } },
+    desc: '내 진영 칸에 그림리퍼(체력 200) 소환 — 같은 줄 상대 타워 앞까지 걸어가 4초마다 낫으로 67 피해, 벨 때마다 영혼 +1(최대 10). 상대 리퍼와 만나면 서로 싸운다. 쓰러지면 영혼 수만큼 유령이 상대 진영에 솟아 타워에 닿으면 10 피해'
   }
 };
 
+/**
+ * 카드 면 그림이 있는 카드 — 그림이 이름·에너지·등급 표시까지 담고 있어서 기본 아이콘·글자를 가린다.
+ * 덱·받을 카드·관전자 덱 모두 이것으로 붙인다 (DB에서 온 카드는 art가 없을 수 있어 정의에서 찾는다).
+ */
+function cardApplyArt(el, card) {
+  const art = CARD_DEFINITIONS[card?.id]?.art || card?.art;
+  if (!art) return;
+  el.classList.add('card-art');
+  // CSS 변수 속 url()은 스타일시트(css/) 기준으로 풀린다 — 문서 기준 절대 주소로 넘긴다
+  el.style.setProperty('--card-art', `url("${new URL(art, document.baseURI).href}")`);
+}
+
 // 진화 매핑: 원본 cardId → 진화 cardId
 const EVOLUTION_MAP = {
-  wooden_sword: 'dual_sword',
-  rock:         'rock_hell',
-  wind:         'strong_wind',
-  earthquake:   'doom_fragment',
-  arrow:        'cupid_arrow'
+  wooden_sword:    'dual_sword',
+  rock:            'rock_hell',
+  wind:            'tornado',
+  earthquake:      'collapse',
+  arrow:           'love_arrow',
+  wave:            'wave_evo',
+  flame:           'fire_evo',
+  brick:           'iron_wall',
+  thorn:           'thorn_evo',
+  cherry_blossom:  'cherry_blossom_evo',
+  starlight_burst: 'starlight_burst_evo'
 };
+
+// 진화 카드 → 원본 카드 (진화로 태어난 카드인지 판별)
+const EVOLUTION_ORIGIN = Object.fromEntries(Object.entries(EVOLUTION_MAP).map(([a, b]) => [b, a]));
 
 // 등급별 카드 ID 목록 (진화 카드는 드로우 풀에서 제외)
 const CARDS_BY_GRADE = {
   common:    ['wooden_sword', 'rock', 'wind', 'earthquake', 'arrow'],
-  rare:      ['flame', 'wave', 'thorn', 'iron_wall', 'cherry_blossom'],
-  epic:      ['lightning', 'tornado', 'forest_spirit', 'shadow_shield', 'starlight_burst', 'pumpkin_carriage'],
+  rare:      ['flame', 'wave', 'thorn', 'brick', 'cherry_blossom'],
+  epic:      ['lightning', 'forest_spirit', 'starlight_burst', 'pumpkin_carriage'],
   mythic:    ['black_hole', 'nightmare', 'ice_deploy', 'viper', 'mirror'],
-  legendary: ['dragon_breath', 'safe_zone', 'celestial_wings', 'doom_seal'],
+  legendary: ['dragon_breath', 'safe_zone', 'doom_seal'],
   secret:    ['apocalypse', 'grim_reaper']
 };
 

@@ -2,27 +2,37 @@
    animations.css — 대미지 숫자, 타워 파괴, DOT 이펙트
 ============================================================ */
 
-/* ── 플로팅 대미지/치유 숫자 ────────────────────────────── */
+/* ── 플로팅 대미지/치유 숫자 ────────────────────────────────
+   #fx-layer(스테이지 내부)에 스테이지 좌표로 붙는다 → 스테이지와 같은 배율 */
 .floating-number {
-  position: fixed;
+  position: absolute;
   pointer-events: none;
   font-weight: 900;
-  font-size: 22px;
+  font-size: 52px;
   z-index: 9999;
-  text-shadow: 0 0 6px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7);
+  -webkit-text-stroke: 1.5px rgba(0,0,0,0.9);
+  text-shadow: 0 0 10px rgba(0,0,0,0.9), 0 4px 0 rgba(0,0,0,0.8);
   animation: float-up 1.4s ease-out forwards;
   white-space: nowrap;
 }
 
 .floating-number.damage { color: #ff5252; }
 .floating-number.heal   { color: #69f0ae; }
-.floating-number.dot    { font-size: 17px; color: #ff8a65; }
-.floating-number.immune { font-size: 14px; color: #64b5f6; letter-spacing: 1px; }
+.floating-number.dot    { font-size: 40px; color: #ff8a65; }
+.floating-number.immune { font-size: 32px; color: #64b5f6; letter-spacing: 1px; }
+.floating-number.thaw { font-size: 30px; color: #9fe3ff; letter-spacing: 1px; text-shadow: 0 0 10px rgba(120, 210, 255, 0.8), 0 2px 4px rgba(0, 0, 0, 0.6); }
+
+/* 내가 상대 타워에 넣은 피해 — 흰색으로 구분한다.
+   내 타워가 맞는 피해는 그대로 빨간색 */
+.floating-number.dealt { color: #ffffff; }
+/* 크리티컬 — 기본 피해보다 크게 들어갔다 (차징 · 증폭 · 토네이도 최고 피해). 글자만 황금색, 테두리는 그대로 */
+.floating-number.crit { color: #ffd23a; }
 
 @keyframes float-up {
-  0%   { opacity: 1;   transform: translateY(0)    scale(1.2); }
-  30%  { opacity: 1;   transform: translateY(-20px) scale(1); }
-  100% { opacity: 0;   transform: translateY(-55px) scale(0.8); }
+  /* 글자가 커져도 기준점 중앙에 오도록 가로 -50% */
+  0%   { opacity: 1;   transform: translate(-50%, 0)     scale(1.25); }
+  30%  { opacity: 1;   transform: translate(-50%, -36px) scale(1); }
+  100% { opacity: 0;   transform: translate(-50%, -96px) scale(0.8); }
 }
 
 /* ── 타워 피격 흔들림 ───────────────────────────────────── */
@@ -32,10 +42,10 @@
 
 @keyframes tower-shake {
   0%   { transform: translateX(0); }
-  20%  { transform: translateX(-5px); }
-  40%  { transform: translateX(5px); }
-  60%  { transform: translateX(-4px); }
-  80%  { transform: translateX(4px); }
+  20%  { transform: translateX(-7px); }
+  40%  { transform: translateX(7px); }
+  60%  { transform: translateX(-5px); }
+  80%  { transform: translateX(5px); }
   100% { transform: translateX(0); }
 }
 
@@ -51,6 +61,194 @@
   100% { transform: scale(0.8);  filter: brightness(0) grayscale(1); opacity: 0; }
 }
 
+/* ── 사각별 빛 폭발 (board.js _spawnStarBurst) ──────────────
+   킹이 무너질 때(큰 것) · 남은 타워가 빛으로 사라질 때(작은 것).
+   #fx-layer 안에 타워 몸통 한가운데 좌표로 생긴다. 빛 번짐은 바깥 상자의 filter가 맡는다
+   (clip-path로 자른 별에 직접 그림자를 주면 그림자까지 잘린다). */
+.fx-star-burst {
+  --r: 150px;
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 40;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 26px rgba(255, 214, 110, 0.85));
+}
+.fx-star-burst.big { --r: 210px; }
+.fx-star-burst i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  transform: translate(-50%, -50%) scale(0);
+}
+/* 넓게 번지는 빛 */
+.fsb-glow {
+  width: calc(var(--r) * 2.2);
+  height: calc(var(--r) * 2.2);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 240, 0.9) 0%, rgba(255, 220, 130, 0.45) 30%, rgba(255, 190, 80, 0) 68%);
+  animation: fsb-glow 0.9s ease-out forwards;
+}
+.big .fsb-glow { animation-duration: 1.3s; }
+/* 긴 빛줄기 넷 — 사각별 */
+.fsb-star {
+  width: calc(var(--r) * 2);
+  height: calc(var(--r) * 2);
+  background: radial-gradient(circle, #ffffff 0%, #fffbe8 16%, #ffe07a 38%, rgba(255, 200, 80, 0.2) 70%);
+  clip-path: polygon(50% 0, 54.5% 45.5%, 100% 50%, 54.5% 54.5%, 50% 100%, 45.5% 54.5%, 0 50%, 45.5% 45.5%);
+  animation: fsb-star 0.75s cubic-bezier(0.15, 0.85, 0.3, 1) forwards;
+}
+.big .fsb-star { animation-duration: 1.15s; }
+/* 짧은 빛줄기 넷 — 대각선으로 반짝임 */
+.fsb-star2 {
+  width: calc(var(--r) * 1.1);
+  height: calc(var(--r) * 1.1);
+  --rot: 45deg;
+  animation-delay: 40ms;
+}
+.fsb-core {
+  width: calc(var(--r) * 0.55);
+  height: calc(var(--r) * 0.55);
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, #fff 35%, rgba(255, 240, 190, 0) 72%);
+  animation: fsb-core 0.6s ease-out forwards;
+}
+.big .fsb-core { animation-duration: 0.9s; }
+.fsb-ring {
+  width: calc(var(--r) * 0.9);
+  height: calc(var(--r) * 0.9);
+  border-radius: 50%;
+  border: 4px solid rgba(255, 244, 205, 0.95);
+  box-shadow: 0 0 16px rgba(255, 220, 120, 0.9), inset 0 0 12px rgba(255, 220, 120, 0.7);
+  animation: fsb-ring 0.8s ease-out forwards;
+}
+.big .fsb-ring { border-width: 7px; animation-duration: 1.1s; }
+/* 반짝이 — 사방으로 튀며 작은 사각별이 된다 */
+.fsb-spark {
+  width: 14px;
+  height: 14px;
+  background: #fffbe6;
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  animation: fsb-spark 0.8s ease-out forwards;
+}
+.big .fsb-spark { width: 20px; height: 20px; animation-duration: 1.1s; }
+
+@keyframes fsb-glow {
+  0%   { opacity: 0;   transform: translate(-50%, -50%) scale(0.2); }
+  18%  { opacity: 1;   transform: translate(-50%, -50%) scale(0.9); }
+  100% { opacity: 0;   transform: translate(-50%, -50%) scale(1.25); }
+}
+@keyframes fsb-star {
+  0%   { opacity: 1; transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(0.05); }
+  22%  { opacity: 1; transform: translate(-50%, -50%) rotate(calc(var(--rot, 0deg) + 8deg)) scale(1.1); }
+  55%  { opacity: 0.9; transform: translate(-50%, -50%) rotate(calc(var(--rot, 0deg) + 14deg)) scale(0.95); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(calc(var(--rot, 0deg) + 22deg)) scale(0.4, 0.4); }
+}
+@keyframes fsb-core {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(0.3); }
+  25%  { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+}
+@keyframes fsb-ring {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(0.2); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(3.2); border-width: 1px; }
+}
+@keyframes fsb-spark {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+  15%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(90deg) scale(0.9); }
+}
+
+/* ── 돌이 타워에 맞았다 (board.js _stoneTowerHit) — 타워 몸통 위, #fx-layer ── */
+.fx-stone-hit {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 38;
+}
+.fx-stone-hit i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  transform: translate(-50%, -50%) scale(0);
+}
+.fsh-flash {
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffef4 0%, #ffe3a0 22%, rgba(255, 150, 50, 0.75) 45%, rgba(255, 110, 30, 0) 70%);
+  animation: fsh-flash 0.55s ease-out forwards;
+}
+.fsh-star {
+  width: 170px;
+  height: 170px;
+  background: radial-gradient(circle, #fff 0%, #ffe9b8 30%, rgba(255, 180, 90, 0.2) 70%);
+  clip-path: polygon(50% 0, 56% 40%, 92% 22%, 62% 50%, 100% 58%, 58% 62%, 70% 100%, 48% 66%, 20% 92%, 38% 58%, 0 46%, 40% 42%, 18% 10%, 46% 34%);
+  animation: fsh-star 0.45s ease-out forwards;
+}
+.fsh-ring {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 6px solid rgba(255, 236, 190, 0.95);
+  box-shadow: 0 0 14px rgba(255, 170, 70, 0.9);
+  animation: fsh-ring 0.6s ease-out forwards;
+}
+.fsh-shard {
+  width: 13px;
+  height: 11px;
+  background: linear-gradient(135deg, #d8cfc4 0%, #8d8279 55%, #4b4540 100%);
+  clip-path: polygon(20% 0, 100% 25%, 80% 100%, 0 70%);
+  animation: fsh-shard 0.75s cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
+}
+@keyframes fsh-flash {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(0.3); }
+  30%  { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.3); }
+}
+@keyframes fsh-star {
+  0%   { opacity: 1; transform: translate(-50%, -50%) rotate(0deg) scale(0.2); }
+  40%  { opacity: 1; transform: translate(-50%, -50%) rotate(12deg) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(20deg) scale(1.2); }
+}
+@keyframes fsh-ring {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(0.3); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.4); border-width: 1px; }
+}
+@keyframes fsh-shard {
+  0%   { opacity: 1; transform: translate(-50%, -50%) rotate(var(--rot)) scale(var(--s)); }
+  70%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 40px)) rotate(calc(var(--rot) + 260deg)) scale(var(--s)); }
+}
+/* 돌이 타워를 때린 순간 필드가 쿵 */
+.game-map.field-bump {
+  animation: field-bump 0.28s ease-out;
+}
+@keyframes field-bump {
+  0%, 100% { transform: translate(0, 0); }
+  25%  { transform: translate(-4px, 3px); }
+  55%  { transform: translate(3px, -2px); }
+  80%  { transform: translate(-1px, 1px); }
+}
+
+/* 킹 붕괴 순간 필드 전체 흔들림 */
+.game-map.field-shake {
+  animation: field-shake 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes field-shake {
+  0%, 100% { transform: translate(0, 0); }
+  10%  { transform: translate(-10px,  4px); }
+  25%  { transform: translate( 10px, -6px); }
+  40%  { transform: translate( -8px,  6px); }
+  55%  { transform: translate(  7px, -4px); }
+  70%  { transform: translate( -4px,  3px); }
+  85%  { transform: translate(  2px, -1px); }
+}
+
 /* ── 에너지 부족 흔들림 ─────────────────────────────────── */
 .energy-shake {
   animation: energy-no 0.4s ease;
@@ -60,17 +258,6 @@
   0%,100% { transform: translateX(0); }
   25%     { transform: translateX(-4px); }
   75%     { transform: translateX(4px); }
-}
-
-/* ── 카드 덱 추가 이펙트 ────────────────────────────────── */
-.card-added {
-  animation: card-pop 0.35s ease;
-}
-
-@keyframes card-pop {
-  0%   { transform: scale(0.7); opacity: 0.5; }
-  60%  { transform: scale(1.1); opacity: 1; }
-  100% { transform: scale(1);   opacity: 1; }
 }
 
 /* ── 카드 사용 (페이드아웃) ─────────────────────────────── */
@@ -85,7 +272,7 @@
 
 /* ── 전설 카드 등장 파티클 ──────────────────────────────── */
 .legendary-flash {
-  position: fixed;
+  position: absolute;   /* #fx-layer 안 — 스테이지만 덮음 */
   inset: 0;
   pointer-events: none;
   z-index: 9998;
@@ -139,12 +326,2026 @@
 .result-title.win  { color: var(--grade-legendary); }
 .result-title.lose { color: var(--text-accent); }
 
-/* ── HP 바 깜빡임 (체력 낮을 때) ────────────────────────── */
-.hp-bar.critical {
+/* ── 체력 숫자 깜빡임 (체력 낮을 때) ────────────────────────── */
+.tower-hp.critical {
   animation: hp-critical 1s infinite alternate;
 }
 
 @keyframes hp-critical {
   from { opacity: 1; }
   to   { opacity: 0.5; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   카드 시전 (board.js CAST_STYLES)
+   여기 있는 것은 '사거리 표시'뿐이다 — 카드를 고르면 마우스를 따라다니고,
+   대상이 잡히면 금색으로 바뀌는 UI라서 CSS로 남겨 둔다.
+   · .cast-arc   — 부채꼴 사거리 (오른쪽으로 펼쳐짐, 목검)
+   · .cast-lunge — 일자 돌진 사거리 + 끝의 X자 범위 (듀얼 검)
+
+   클릭했을 때 터지는 '연출'은 CSS가 아니라 fx/ 폴더의 SVG 파일에 들어 있다.
+   · .cast-fx    — 그 SVG를 놓는 <img> 자리 (fx/README.md 참고)
+════════════════════════════════════════════════════════════ */
+.cast-arc {
+  position: absolute;   /* #cast-ground 안 — 맵 좌표로 놓이고 바닥과 같이 눠는다 */
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    conic-gradient(from var(--arc-from) at 50% 50%,
+      rgba(255, 255, 255, 0.30) 0deg,
+      rgba(255, 255, 255, 0.10) calc(var(--arc-deg) * 0.5),
+      rgba(255, 255, 255, 0.30) var(--arc-deg),
+      transparent var(--arc-deg));
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent 8%, #000 14%, #000 100%);
+          mask: radial-gradient(circle at 50% 50%, transparent 8%, #000 14%, #000 100%);
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.35));
+  animation: cast-arc-breathe 1.2s ease-in-out infinite;
+}
+
+/* 사거리 안에 칠 수 있는 타워가 들어옴 */
+.cast-arc.cast-arc-ready {
+  background:
+    conic-gradient(from var(--arc-from) at 50% 50%,
+      rgba(255, 209, 102, 0.55) 0deg,
+      rgba(255, 176, 60, 0.22) calc(var(--arc-deg) * 0.5),
+      rgba(255, 209, 102, 0.55) var(--arc-deg),
+      transparent var(--arc-deg));
+  filter: drop-shadow(0 0 12px rgba(255, 200, 90, 0.65));
+}
+
+@keyframes cast-arc-breathe {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
+}
+
+.cast-fx {
+  position: absolute;
+  pointer-events: none;
+  z-index: 62;
+}
+
+/* ── 듀얼 검 사거리 ──────────────────────────────────────────
+   커서에서 오른쪽으로 뻗는 일자 돌진 + 그 끝의 X자 범위
+   (돌진·X 베기 연출 자체는 fx/dualsword.svg) */
+.cast-lunge {
+  position: absolute;   /* #cast-ground 안 — 맵 좌표로 놓이고 바닥과 같이 눠는다 */
+  z-index: 3;
+  transform: translate(0, -50%);
+  pointer-events: none;
+  animation: cast-arc-breathe 1.2s ease-in-out infinite;
+}
+
+/* 돌진하는 길 — 커서에서 오른쪽으로 곧게 뻗는다 (끝으로 갈수록 옅어진다) */
+.cast-lunge-path {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0.30) 0%,
+    rgba(255, 255, 255, 0.14) 55%,
+    rgba(255, 255, 255, 0.06) 100%);
+  -webkit-mask: linear-gradient(90deg, transparent 0%, #000 6%, #000 70%, rgba(0, 0, 0, 0.35) 100%);
+          mask: linear-gradient(90deg, transparent 0%, #000 6%, #000 70%, rgba(0, 0, 0, 0.35) 100%);
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.35));
+}
+
+/* 돌진 끝의 X자 범위 — 길 위에 겹쳐도 보이도록 선을 굵고 밝게 */
+.cast-lunge-x {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  height: 100%;
+  aspect-ratio: 1 / 1;   /* 사거리 폭(band)과 같은 크기의 정사각형 X */
+  transform: translate(50%, -50%);
+  background:
+    linear-gradient(45deg,  transparent calc(50% - 4px), rgba(255, 255, 255, 0.92) 50%, transparent calc(50% + 4px)),
+    linear-gradient(-45deg, transparent calc(50% - 4px), rgba(255, 255, 255, 0.92) 50%, transparent calc(50% + 4px));
+  filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+}
+
+.cast-lunge.cast-arc-ready .cast-lunge-path {
+  background: linear-gradient(90deg,
+    rgba(255, 209, 102, 0.55) 0%,
+    rgba(255, 176, 60, 0.24) 55%,
+    rgba(255, 176, 60, 0.10) 100%);
+  filter: drop-shadow(0 0 12px rgba(255, 200, 90, 0.65));
+}
+
+.cast-lunge.cast-arc-ready .cast-lunge-x {
+  background:
+    linear-gradient(45deg,  transparent calc(50% - 4px), #ffe08a 50%, transparent calc(50% + 4px)),
+    linear-gradient(-45deg, transparent calc(50% - 4px), #ffe08a 50%, transparent calc(50% + 4px));
+  filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 10px rgba(255, 200, 90, 0.8));
+}
+
+/* ── 숲의정령 사거리 ─────────────────────────────────────────
+   커서를 중심으로 한 원형 범위 (타워 3개가 들어간다)
+   (설치 연출 자체는 fx/forest.svg) */
+/* ── 투척 사거리 (돌) ─────────────────────────────────────
+   board.js CAST_STYLES.stone · shape: 'throw'
+   화면 전체를 덮는 빈 상자 안에 포물선 · 착지 원 · 차징 게이지를 올린다.
+   포물선은 '던진다'는 것을 한눈에 보여 주는 부분이라 점선이 흘러가게 했다 */
+.cast-throw {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+.cast-throw-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.cast-throw-path {
+  fill: none;
+  stroke: rgba(255, 224, 150, 0.6);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 9 13;
+  filter: drop-shadow(0 0 6px rgba(255, 190, 90, 0.45));
+  animation: throw-dash 0.55s linear infinite;
+}
+
+/* 점선이 던지는 쪽에서 착지점으로 흘러간다 */
+@keyframes throw-dash { to { stroke-dashoffset: -22; } }
+
+.cast-throw.cast-arc-ready .cast-throw-path {
+  stroke: rgba(255, 214, 110, 0.95);
+  stroke-width: 4;
+  filter: drop-shadow(0 0 10px rgba(255, 190, 90, 0.75));
+}
+
+.cast-throw.cast-circle-bad .cast-throw-path {
+  stroke: rgba(255, 100, 100, 0.7);
+  filter: drop-shadow(0 0 6px rgba(255, 80, 80, 0.4));
+}
+
+/* 착지 원 — 여기 안에 든 타워 하나를 맞힌다 */
+/* 착지 원을 담는 겹 — .cast-throw(화면 고정)가 아니라 #cast-ground 안에 붙는다.
+   돌이 그리는 포물선은 공중이라 누우면 안 되고, 착지 원은 바닥이라 누워야 한다. */
+.cast-lands {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.cast-throw-land {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(255, 200, 110, 0.10) 0%,
+    rgba(255, 200, 110, 0.06) 60%,
+    rgba(255, 214, 140, 0.24) 88%,
+    rgba(255, 214, 140, 0) 100%);
+  box-shadow: inset 0 0 0 2px rgba(255, 224, 160, 0.5);
+  filter: drop-shadow(0 0 8px rgba(255, 180, 80, 0.35));
+  animation: cast-arc-breathe 1.2s ease-in-out infinite;
+}
+
+.cast-lands.cast-arc-ready .cast-throw-land {
+  background: radial-gradient(circle,
+    rgba(255, 200, 110, 0.2) 0%,
+    rgba(255, 200, 110, 0.12) 60%,
+    rgba(255, 226, 160, 0.42) 88%,
+    rgba(255, 226, 160, 0) 100%);
+  box-shadow: inset 0 0 0 3px rgba(255, 236, 190, 0.85);
+  animation: none;
+}
+
+.cast-lands.cast-circle-bad .cast-throw-land {
+  background: radial-gradient(circle,
+    rgba(255, 90, 90, 0.10) 0%,
+    rgba(255, 90, 90, 0.06) 60%,
+    rgba(255, 120, 120, 0.22) 88%,
+    rgba(255, 120, 120, 0) 100%);
+  box-shadow: inset 0 0 0 2px rgba(255, 130, 130, 0.5);
+}
+
+/* ── 차징 게이지 ──────────────────────────────────────────
+   --charge (0~100)만큼 원이 채워진다. 20%마다 한 단계라 눈금을 같이 둔다.
+   가운데 숫자는 지금 떼면 들어갈 피해 */
+.cast-throw-gauge {
+  --charge: 0;
+  position: absolute;
+  width: 92px;
+  height: 92px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  background:
+    /* 채워진 만큼 */
+    conic-gradient(from -90deg,
+      rgba(255, 196, 80, 0.95) calc(var(--charge) * 1%),
+      rgba(255, 255, 255, 0.10) 0),
+    /* 20%마다 눈금 */
+    repeating-conic-gradient(from -90deg,
+      rgba(0, 0, 0, 0.55) 0deg 2.2deg,
+      rgba(0, 0, 0, 0) 2.2deg var(--tick, 72deg));
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55), 0 4px 14px rgba(0, 0, 0, 0.5);
+  /* 가운데를 뚫어 고리로 만든다 */
+  -webkit-mask: radial-gradient(circle, transparent 0 28px, #000 29px);
+          mask: radial-gradient(circle, transparent 0 28px, #000 29px);
+}
+
+.cast-throw-gauge.charging { opacity: 1; }
+
+/* 가득 차면 눈에 띄게 */
+.cast-throw-gauge.full {
+  background:
+    conic-gradient(from -90deg, rgba(255, 236, 150, 1) 100%, rgba(255, 236, 150, 1) 0),
+    repeating-conic-gradient(from -90deg,
+      rgba(0, 0, 0, 0.45) 0deg 2.2deg,
+      rgba(0, 0, 0, 0) 2.2deg var(--tick, 72deg));
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55), 0 0 18px rgba(255, 210, 90, 0.9);
+  animation: throw-full 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes throw-full {
+  from { transform: translate(-50%, -50%) scale(1);    }
+  to   { transform: translate(-50%, -50%) scale(1.07); }
+}
+
+/* 지금 떼면 들어갈 피해 — 게이지는 가운데를 마스크로 뚫기 때문에
+   자식으로 두면 같이 지워진다. 형제로 두고 같은 자리에 올린다 */
+.cast-throw-dmg {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+  -webkit-text-stroke: 4px #000;
+  paint-order: stroke fill;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+  font-variant-numeric: tabular-nums;
+}
+
+.cast-throw-dmg.charging { opacity: 1; }
+
+/* 조작법 안내 — 한 번 차기 시작하면 사라진다.
+   조작이 바뀜으니 예전처럼 왼쪽 버튼을 꾹 누를까 봐서 눈에 보이게 달아 둠다 */
+.cast-throw-hint {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  color: #ffe9b0;
+  background: rgba(20, 16, 8, 0.82);
+  border: 1px solid rgba(255, 200, 90, 0.45);
+  transition: opacity 0.15s ease;
+}
+
+.cast-throw-hint.hidden { opacity: 0; }
+
+/* ── 타일 설치 (토네이도) ─────────────────────────────────
+   board.js CAST_STYLES.tornado · shape: 'tile'
+   놓을 칸 한 칸 + 다 자랐을 때의 범위 원 + 나아갈 길 */
+.cast-tile {
+  position: absolute;   /* #cast-ground 안 — 칸·범위·길 모두 바닥에 칠한다 */
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* 놓일 칸 — 타일 한 칸에 딱 맞는 네모 */
+.cast-tile-cell {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: 3px solid rgba(160, 235, 255, 0.85);
+  border-radius: 6px;
+  background: rgba(120, 220, 255, 0.16);
+  box-shadow: 0 0 14px rgba(110, 215, 255, 0.5), inset 0 0 18px rgba(150, 235, 255, 0.28);
+}
+
+/* 다 자랐을 때 닿는 범위 — 왼쪽(멀리)에 놓을수록 커진다 */
+.cast-tile-reach {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(150, 230, 255, 0.10) 0%,
+    rgba(150, 230, 255, 0.05) 62%,
+    rgba(180, 240, 255, 0.22) 88%,
+    rgba(180, 240, 255, 0) 100%);
+  box-shadow: inset 0 0 0 2px rgba(190, 240, 255, 0.45);
+  animation: cast-arc-breathe 1.2s ease-in-out infinite;
+}
+
+/* 토네이도가 지나갈 길 */
+.cast-tile-path {
+  position: absolute;
+  transform: translateY(-50%);
+  border-radius: 8px;
+  background: linear-gradient(90deg,
+    rgba(150, 230, 255, 0.22) 0%,
+    rgba(150, 230, 255, 0.10) 70%,
+    rgba(150, 230, 255, 0) 100%);
+  box-shadow: inset 0 0 0 1px rgba(180, 240, 255, 0.3);
+}
+
+.cast-tile.cast-arc-ready .cast-tile-cell {
+  border-color: rgba(255, 236, 190, 0.95);
+  background: rgba(255, 214, 110, 0.2);
+  box-shadow: 0 0 18px rgba(255, 200, 90, 0.6), inset 0 0 20px rgba(255, 226, 160, 0.3);
+}
+.cast-tile.cast-arc-ready .cast-tile-reach {
+  box-shadow: inset 0 0 0 3px rgba(255, 236, 190, 0.8);
+  animation: none;
+}
+
+/* 못 놓는 칸 (내 진영 밖 · 타워가 선 칸) */
+.cast-tile.cast-circle-bad .cast-tile-cell {
+  border-color: rgba(255, 130, 130, 0.9);
+  background: rgba(255, 90, 90, 0.18);
+  box-shadow: 0 0 14px rgba(255, 90, 90, 0.5);
+}
+.cast-tile.cast-circle-bad .cast-tile-reach { opacity: 0.35; }
+
+/* 벚꽃 — 회복이라 초록. 타워가 선 칸에만 놓이므로 맞는 칸에서만 밝아진다 */
+.cast-towertile .cast-tile-cell {
+  border-color: rgba(150, 245, 175, 0.85);
+  background: rgba(120, 230, 150, 0.16);
+  box-shadow: 0 0 14px rgba(120, 230, 150, 0.5), inset 0 0 18px rgba(150, 245, 175, 0.28);
+}
+.cast-towertile.cast-arc-ready .cast-tile-cell {
+  border-color: #b6ffcb;
+  background: rgba(150, 245, 175, 0.3);
+  box-shadow: 0 0 22px rgba(140, 240, 170, 0.8), inset 0 0 22px rgba(190, 255, 210, 0.4);
+}
+
+/* 토템(숲의정령 · 흰꽃) — 놓을 칸 네모 + 그 가운데의 범위 원.
+   설치물이라 벚꽃과 같은 초록. 토네이도의 파란 규칙 뒤에 놓아야 이긴다 */
+.cast-totemtile .cast-tile-cell {
+  border-color: rgba(150, 245, 175, 0.85);
+  background: rgba(120, 230, 150, 0.16);
+  box-shadow: 0 0 14px rgba(120, 230, 150, 0.5), inset 0 0 18px rgba(150, 245, 175, 0.28);
+}
+.cast-totemtile .cast-tile-reach {
+  background: radial-gradient(circle,
+    rgba(120, 230, 150, 0.10) 0%,
+    rgba(120, 230, 150, 0.06) 62%,
+    rgba(150, 245, 175, 0.22) 88%,
+    rgba(150, 245, 175, 0) 100%);
+  box-shadow: inset 0 0 0 2px rgba(170, 250, 190, 0.45);
+}
+.cast-totemtile.cast-arc-ready .cast-tile-cell {
+  border-color: #b6ffcb;
+  background: rgba(150, 245, 175, 0.3);
+  box-shadow: 0 0 22px rgba(140, 240, 170, 0.8), inset 0 0 22px rgba(190, 255, 210, 0.4);
+}
+.cast-totemtile.cast-arc-ready .cast-tile-reach {
+  background: radial-gradient(circle,
+    rgba(120, 230, 150, 0.18) 0%,
+    rgba(120, 230, 150, 0.12) 62%,
+    rgba(160, 255, 185, 0.4) 88%,
+    rgba(160, 255, 185, 0) 100%);
+  box-shadow: inset 0 0 0 3px rgba(190, 255, 205, 0.8);
+  animation: none;
+}
+/* 못 놓는 칸 — 타워가 선 칸 · 상대 진영 · 맵 밖 */
+.cast-totemtile.cast-circle-bad .cast-tile-reach {
+  background: radial-gradient(circle,
+    rgba(255, 90, 90, 0.10) 0%,
+    rgba(255, 90, 90, 0.06) 62%,
+    rgba(255, 120, 120, 0.22) 88%,
+    rgba(255, 120, 120, 0) 100%);
+  box-shadow: inset 0 0 0 2px rgba(255, 130, 130, 0.5);
+  opacity: 1;
+}
+
+
+/* 전진하는 토네이도 — #fx-layer(타일 맵 안)에 맵 좌표로 붙는다 */
+.cast-fx-tornado {
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.5));
+}
+
+/* 바위 지옥 — 궤적과 착지 원이 셋. 차징 게이지는 없다 (즉발) */
+.cast-throw3 .cast-throw-gauge,
+.cast-throw3 .cast-throw-dmg { display: none; }
+
+/* 세 덩이가 겹쳐 보이지 않게 뒤로 갈수록 살짝 흐리게 */
+.cast-throw3 .cast-throw-path:nth-of-type(2) { opacity: 0.85; }
+.cast-throw3 .cast-throw-path:nth-of-type(3) { opacity: 0.72; }
+
+/* ── 날아가는 돌 ──────────────────────────────────────────
+   #fx-layer(타일 맵 안) 에 맵 좌표로 붙는다 → 맵을 끌거나 확대해도 같이 간다.
+   가로(.stone-fly)와 세로(.stone-fly-wrap)를 나눠 돌려야 포물선이 된다 —
+   한 요소에 둘 다 주면 transform이 서로를 덮어쓴다 */
+.stone-fly {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 60;
+}
+
+.stone-fly-wrap {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.stone-fly-rock {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.55));
+}
+
+/* 바닥 그림자 — 높이 뜰수록 작고 옅어진다. '떠 있다'는 느낌은 대부분 이것이 만든다 */
+.stone-fly-shadow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 86px;
+  height: 30px;
+  margin: -15px 0 0 -43px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.3) 55%,
+    rgba(0, 0, 0, 0) 100%);
+  filter: blur(2px);
+}
+
+.cast-circle {
+  position: absolute;   /* #cast-ground 안 — 맵 좌표로 놓이고 바닥과 같이 눠는다 */
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle,
+    rgba(120, 230, 150, 0.10) 0%,
+    rgba(120, 230, 150, 0.06) 62%,
+    rgba(150, 245, 175, 0.22) 88%,
+    rgba(150, 245, 175, 0) 100%);
+  box-shadow: inset 0 0 0 2px rgba(170, 250, 190, 0.45);
+  filter: drop-shadow(0 0 8px rgba(120, 230, 150, 0.35));
+  animation: cast-arc-breathe 1.2s ease-in-out infinite;
+}
+
+/* 설치할 수 없는 자리 (내 구역 밖) — 붉게 */
+.cast-circle.cast-circle-bad {
+  background: radial-gradient(circle,
+    rgba(255, 90, 90, 0.10) 0%,
+    rgba(255, 90, 90, 0.06) 62%,
+    rgba(255, 120, 120, 0.22) 88%,
+    rgba(255, 120, 120, 0) 100%);
+  box-shadow: inset 0 0 0 2px rgba(255, 130, 130, 0.5);
+  filter: drop-shadow(0 0 8px rgba(255, 90, 90, 0.35));
+}
+
+.cast-circle.cast-arc-ready {
+  background: radial-gradient(circle,
+    rgba(120, 230, 150, 0.18) 0%,
+    rgba(120, 230, 150, 0.12) 62%,
+    rgba(160, 255, 185, 0.4) 88%,
+    rgba(160, 255, 185, 0) 100%);
+  box-shadow: inset 0 0 0 3px rgba(190, 255, 205, 0.8);
+  filter: drop-shadow(0 0 16px rgba(130, 240, 160, 0.6));
+}
+
+/* WebGL이 없을 때만 쓰는 평면 토템 — 보통은 towers3d.js가 입체로 세운다 */
+.cast-totem-flat {
+  position: absolute;
+  transform: translate(-50%, -60%);
+  font-size: 74px;
+  line-height: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+}
+
+/* 바닥판(#cast-ground) 안에 놓인 설치형 장식 — 조준 표시와 같은 겹 */
+.cast-fx.cast-fx-ground {
+  position: absolute;
+  z-index: 3;   /* 토템 풀밭 — 물(2) 위 */
+  pointer-events: none;
+}
+
+/* 돌 착지 — 잠깐 남는 움푹 팬 자국. 바닥판(#cast-ground) 안이라 타일과 같이 눕는다 (board.js _stoneImpact).
+   예전의 금빛 판정 고리는 없앴다 — 깨짐 그림의 충격 고리가 판정 원 크기에서 멈춘다 */
+.stone-crater {
+  position: absolute;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle,
+    rgba(10, 8, 6, 0.55) 0%,
+    rgba(20, 16, 12, 0.38) 38%,
+    rgba(40, 32, 24, 0.14) 66%,
+    rgba(40, 32, 24, 0) 100%);
+  animation: stone-crater 1.5s ease-out forwards;
+}
+@keyframes stone-crater {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  12%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  60%  { opacity: 0.8; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.04); }
+}
+
+/* 흙먼지 한 덩이 — 서 있는 연출(#fx-layer). 움직임은 board.js _spawnDust가 준다 */
+.fx-dust {
+  --dust: rgba(186, 170, 150, 0.72);
+  position: absolute;
+  pointer-events: none;
+  z-index: 58;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 55%,
+    var(--dust) 0%,
+    rgba(160, 146, 128, 0.4) 45%,
+    rgba(120, 110, 96, 0) 72%);
+  filter: blur(3px);
+  opacity: 0;
+}
+
+/* ── 지진 · 붕괴 ─────────────────────────────────────────
+   board.js CAST_STYLES.quake / collapse · shape: 'area' */
+
+/* 조준 — 칸에 맞춘 네모. 칸 격자가 비쳐 보이도록 면은 옅게, 칸 금은 따로 긋는다 */
+.cast-area {
+  position: absolute;   /* #cast-ground 안 — 맵 좌표 그대로 */
+  z-index: 3;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: 3px solid rgba(255, 190, 120, 0.85);
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 98px, rgba(255, 200, 140, 0.35) 98px 100px),
+    repeating-linear-gradient(180deg, transparent 0 98px, rgba(255, 200, 140, 0.35) 98px 100px),
+    rgba(255, 150, 70, 0.13);
+  box-shadow: 0 0 14px rgba(255, 150, 70, 0.45), inset 0 0 22px rgba(255, 170, 90, 0.25);
+  animation: cast-arc-breathe 1.2s ease-in-out infinite;
+}
+.cast-area.cast-arc-ready {
+  border-color: rgba(255, 226, 170, 0.98);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 98px, rgba(255, 220, 170, 0.45) 98px 100px),
+    repeating-linear-gradient(180deg, transparent 0 98px, rgba(255, 220, 170, 0.45) 98px 100px),
+    rgba(255, 140, 60, 0.24);
+  box-shadow: 0 0 22px rgba(255, 150, 60, 0.7), inset 0 0 26px rgba(255, 190, 110, 0.35);
+  animation: none;
+}
+
+/* 연출 — 범위 칸마다 진짜 칸을 베낀 조각들이 덮는다 */
+.quake-area {
+  position: absolute;
+  z-index: 1;           /* 조준 표시·토템 장식보다 아래, 타일 위 */
+  pointer-events: none;
+}
+.quake-cell {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+}
+/* 땅울림 — 칸마다 엇박자로 잘게 떤다 */
+.quake-area.quake-rumble .quake-cell {
+  animation: quake-jitter 90ms linear infinite alternate;
+  animation-delay: var(--jd, 0ms);
+}
+@keyframes quake-jitter {
+  0%   { transform: translate(-1.6px, 0.7px); }
+  50%  { transform: translate(1.2px, -0.9px); }
+  100% { transform: translate(-0.6px, 1.3px); }
+}
+/* 꺼진 틈 아래 — 깊은 흙. 가장자리로 갈수록 흙빛이 보여야 '구덩이'로 읽힌다 */
+.quake-pit {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 48%,
+    #050404 0%, #0d0907 42%, #21160f 78%, #3a2a1d 100%);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.9), inset 0 0 4px rgba(255, 170, 110, 0.25);
+  opacity: 0;
+}
+/* 붕괴는 틈 속이 달아올라 보인다 — 지진과 구별된다 */
+.quake-collapse .quake-pit {
+  background: radial-gradient(circle at 50% 48%,
+    #1a0703 0%, #2a0c05 38%, #3b180c 74%, #4a2a18 100%);
+  box-shadow: inset 0 0 20px rgba(255, 90, 30, 0.35), inset 0 0 6px rgba(0, 0, 0, 0.9);
+}
+.quake-shard {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background-color: #141d37;   /* 칸 면은 반투명이다 — 바닥 색을 깔아야 칸과 같은 색이 된다 */
+  will-change: transform, filter;
+}
+
+/* 땅울림 — 맵 전체가 낮게 운다 (킹 붕괴의 field-shake보다 훨씬 잘다) */
+.game-map.field-rumble {
+  animation: field-rumble 0.11s linear infinite;
+}
+@keyframes field-rumble {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-1.5px, 1px); }
+  50%  { transform: translate(1.2px, -1px); }
+  75%  { transform: translate(-1px, -0.6px); }
+  100% { transform: translate(0, 0); }
+}
+
+/* WebGL이 없을 때의 평면 타워도 떨게 한다 (보통은 towers3d.js가 건물을 떤다) */
+body:not(.t3d) .tower.tower-quake .tower-block {
+  animation: quake-jitter 80ms linear infinite alternate;
+}
+
+/* 무너진 토템의 바닥 장식(범위 원·풀·꽃잎) — 흩어지며 사라진다 */
+.cast-fx.totem-broken {
+  transition: opacity 0.5s ease-out, filter 0.5s ease-out;
+  opacity: 0 !important;
+  filter: grayscale(1) brightness(0.6);
+}
+
+/* ── 화살 · 사랑의 화살 ──────────────────────────────────
+   board.js CAST_STYLES.arrow / lovearrow · shape: 'shot' */
+
+/* 조준 — 듀얼 검과 같은 일자 길(.cast-lunge) + 끝의 화살촉. 왼쪽으로 쏠 때는 상자째 뒤집는다 */
+.cast-shot.cast-shot-left { transform: translate(0, -50%) scaleX(-1); }
+.cast-shot-head {
+  position: absolute;
+  right: -14px;
+  top: 50%;
+  width: 30px;
+  height: 34px;
+  transform: translateY(-50%);
+  clip-path: polygon(100% 50%, 0 0, 26% 50%, 0 100%);
+  background: rgba(255, 255, 255, 0.75);
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+}
+.cast-shot.cast-arc-ready .cast-shot-head { background: #ffe08a; }
+.cast-shot-love .cast-lunge-path {
+  background: linear-gradient(90deg,
+    rgba(255, 140, 190, 0.34) 0%, rgba(255, 120, 180, 0.16) 55%, rgba(255, 120, 180, 0.06) 100%);
+}
+.cast-shot-love .cast-shot-head { background: rgba(255, 170, 205, 0.85); }
+.cast-shot-love.cast-arc-ready .cast-lunge-path {
+  background: linear-gradient(90deg,
+    rgba(255, 110, 175, 0.6) 0%, rgba(255, 90, 160, 0.26) 55%, rgba(255, 90, 160, 0.1) 100%);
+  filter: drop-shadow(0 0 12px rgba(255, 110, 175, 0.7));
+}
+.cast-shot-love.cast-arc-ready .cast-shot-head { background: #ff7fb4; }
+
+/* 활 — 당겨진 채 나타나 시위를 놓는다 (#fx-layer, 서 있는 연출) */
+.fx-bow {
+  position: absolute;
+  pointer-events: none;
+  z-index: 63;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+}
+.fx-bow svg { display: block; overflow: visible; }
+.fx-bow-charged { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 10px rgba(255, 210, 110, 0.85)); }
+.fx-bow-love    { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 10px rgba(255, 110, 175, 0.8)); }
+
+/* 날아가는 화살 — 겉 상자가 움직이고, 안쪽이 방향(scaleX)과 떨림을 맡는다 */
+.fx-arrow {
+  --glow: 0.25;
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 64;
+}
+.fx-arrow-body { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; }
+.fx-arrow-body svg {
+  position: absolute;
+  overflow: visible;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.45));
+}
+.fx-arrow-charged .fx-arrow-body svg {
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 7px rgba(255, 214, 110, calc(var(--glow) + 0.2)));
+}
+.fx-arrow-love .fx-arrow-body svg {
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 8px rgba(255, 110, 175, 0.85));
+}
+/* 꼬리 빛줄기 — 촉 뒤로 길게 흐려진다 (속도감은 이게 만든다) */
+.fx-arrow-trail {
+  position: absolute;
+  right: 14px;
+  top: -2.5px;
+  width: 170px;
+  height: 5px;
+  border-radius: 3px;
+  transform-origin: 100% 50%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.28) 55%, rgba(255, 255, 255, 0.8) 100%);
+  filter: blur(1px);
+  transition: opacity 0.12s;
+}
+.fx-arrow-charged .fx-arrow-trail {
+  height: 7px; top: -3.5px;
+  background: linear-gradient(90deg, rgba(255, 200, 90, 0) 0%, rgba(255, 210, 110, 0.45) 55%, rgba(255, 244, 200, 0.95) 100%);
+}
+.fx-arrow-love .fx-arrow-trail {
+  height: 7px; top: -3.5px;
+  background: linear-gradient(90deg, rgba(255, 110, 175, 0) 0%, rgba(255, 130, 185, 0.45) 55%, rgba(255, 220, 235, 0.95) 100%);
+}
+/* 바닥 그림자 — #cast-ground 안 (바닥과 같이 눕는다) */
+.fx-arrow-shadow {
+  position: absolute;
+  z-index: 2;
+  width: 70px;
+  height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0) 70%);
+}
+/* 지나간 자리의 반짝이 */
+.fx-arrow-spark {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  z-index: 63;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff8dc 0%, rgba(255, 214, 110, 0.9) 35%, rgba(255, 200, 80, 0) 70%);
+  opacity: 0;
+}
+.fx-arrow-spark-love {
+  width: 13px;
+  height: 12px;
+  border-radius: 0;
+  background: #ff8fbe;
+  clip-path: path('M6.5,11.5 C3,9 0,6.6 0,3.6 C0,1.4 1.7,0 3.5,0 C4.8,0 5.9,0.8 6.5,1.9 C7.1,0.8 8.2,0 9.5,0 C11.3,0 13,1.4 13,3.6 C13,6.6 10,9 6.5,11.5 Z');
+  filter: drop-shadow(0 0 3px rgba(255, 110, 175, 0.9));
+}
+/* 꽂힌 자리 — 짧은 빛 고리와 튀는 불똥 */
+.fx-arrow-hit {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  pointer-events: none;
+  z-index: 64;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.95) 0 12%, rgba(255, 236, 190, 0.6) 22%, rgba(255, 220, 160, 0) 45%),
+    repeating-conic-gradient(from 10deg, rgba(255, 240, 200, 0.95) 0deg 5deg, rgba(255, 240, 200, 0) 5deg 45deg);
+  -webkit-mask: radial-gradient(circle, #000 0 48%, transparent 70%);
+          mask: radial-gradient(circle, #000 0 48%, transparent 70%);
+  animation: fx-arrow-hit 0.42s cubic-bezier(0.15, 0.8, 0.3, 1) forwards;
+}
+.fx-arrow-hit-love {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.95) 0 12%, rgba(255, 170, 205, 0.7) 24%, rgba(255, 120, 180, 0) 46%),
+    repeating-conic-gradient(from 10deg, rgba(255, 150, 195, 0.95) 0deg 6deg, rgba(255, 150, 195, 0) 6deg 40deg);
+}
+@keyframes fx-arrow-hit {
+  0%   { transform: translate(-50%, -50%) scale(0.3); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.35); opacity: 0; }
+}
+
+/* WebGL이 없을 때의 하트 */
+.fx-love-flat {
+  position: absolute;
+  z-index: 64;
+  pointer-events: none;
+  font-size: 58px;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 12px rgba(255, 110, 175, 0.9));
+}
+.fx-love-flat.heal  { animation: love-flat-heal 1.1s ease-out forwards; }
+.fx-love-flat.break { animation: love-flat-break 1.1s ease-in forwards; }
+@keyframes love-flat-heal {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+  30%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -90%) scale(1); }
+}
+@keyframes love-flat-break {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+  100% { opacity: 0; transform: translate(-50%, -10%) scale(0.8) rotate(12deg); }
+}
+
+/* 벽에 박힌 화살 — 촉(그림 오른쪽 끝 18px)이 벽 속에 들어가 보이지 않는다 */
+.fx-arrow-stuck .fx-arrow-body svg {
+  clip-path: inset(-10px 18px -10px -10px);
+}
+/* 박힌 자리 — 움푹 팬 자국 + 짧은 실금 (화살 뒤에 깔린다) */
+.fx-arrow-mark {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  pointer-events: none;
+  z-index: 63;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(20, 14, 10, 0.75) 0 18%, rgba(40, 30, 22, 0.35) 34%, rgba(40, 30, 22, 0) 62%),
+    repeating-conic-gradient(from 20deg, rgba(25, 18, 12, 0.7) 0deg 4deg, rgba(0, 0, 0, 0) 4deg 60deg);
+  -webkit-mask: radial-gradient(circle, #000 0 45%, transparent 70%);
+          mask: radial-gradient(circle, #000 0 45%, transparent 70%);
+  animation: fx-arrow-mark 0.9s ease-out forwards;
+}
+@keyframes fx-arrow-mark {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+  12%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  70%  { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* 돌 · 바위 지옥 착지 — 타일 한 칸 네모 (원형 표시를 대신한다). 바닥판 안이라 칸과 똑같이 눕는다 */
+.cast-throw-land.cast-throw-tile {
+  box-sizing: border-box;
+  border-radius: 6px;
+  border: 3px solid rgba(255, 214, 150, 0.8);
+  background: rgba(255, 190, 110, 0.14);
+  box-shadow: 0 0 12px rgba(255, 180, 80, 0.45), inset 0 0 16px rgba(255, 210, 140, 0.25);
+  filter: none;
+}
+.cast-lands.cast-arc-ready .cast-throw-land.cast-throw-tile {
+  border-color: rgba(255, 236, 190, 0.98);
+  background: rgba(255, 200, 100, 0.28);
+  box-shadow: 0 0 20px rgba(255, 190, 80, 0.75), inset 0 0 20px rgba(255, 226, 160, 0.4);
+}
+.cast-lands.cast-circle-bad .cast-throw-land.cast-throw-tile {
+  border-color: rgba(255, 130, 130, 0.9);
+  background: rgba(255, 90, 90, 0.16);
+  box-shadow: 0 0 12px rgba(255, 90, 90, 0.45);
+}
+
+/* ════════════════════════════════════════════════════════════
+   그림리퍼 — 소환 칸 · 유닛 머리 위 막대 · 낫 베기 · 컷씬
+════════════════════════════════════════════════════════════ */
+
+/* 소환 칸 — #cast-ground 안 (바닥과 같이 눕는다). 놓을 수 있는 칸은 초록, 나머지는 빨강 */
+.cast-summon {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.cast-summon-tile {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  box-sizing: border-box;
+}
+.cast-summon-tile.ok {
+  background: rgba(90, 230, 130, 0.16);
+  box-shadow: inset 0 0 0 2px rgba(120, 255, 160, 0.55);
+}
+.cast-summon-tile.bad {
+  background: rgba(255, 60, 70, 0.13);
+  box-shadow: inset 0 0 0 1px rgba(255, 110, 120, 0.28);
+}
+.cast-summon-cell {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  box-sizing: border-box;
+  border: 3px solid rgba(200, 180, 255, 0.95);
+  border-radius: 6px;
+  background: rgba(150, 110, 255, 0.28);
+  box-shadow: 0 0 22px rgba(160, 120, 255, 0.7), inset 0 0 22px rgba(220, 200, 255, 0.35);
+}
+.cast-summon-cell.bad {
+  border-color: rgba(255, 90, 100, 0.95);
+  background: rgba(255, 50, 60, 0.25);
+  box-shadow: 0 0 16px rgba(255, 60, 70, 0.5);
+}
+/* 걸어갈 길 — 놓은 칸에서 목표 타워 앞까지 점선 */
+.cast-summon-path {
+  position: absolute;
+  height: 14px;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(90deg,
+    rgba(210, 190, 255, 0.85) 0 16px, rgba(210, 190, 255, 0) 16px 28px);
+  border-radius: 7px;
+  filter: drop-shadow(0 0 6px rgba(150, 110, 255, 0.8));
+  animation: summon-path-flow 0.8s linear infinite;
+}
+@keyframes summon-path-flow {
+  from { background-position: 0 0; }
+  to   { background-position: 28px 0; }
+}
+
+/* 그림리퍼 낫 대기 게이지 — 몸 한가운데. 로딩 화면 링(base.css .loading-ring)과 같은 빛깔, 버퍼링 꼬리는 없다.
+   --p: 지난 대기(0~100) — units.js _uCooldown */
+.unit-cd {
+  --ring: 6px;
+  --p: 0;
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 28;
+  background: #1f232a;
+  box-shadow: 0 0 0 2px #1f232a, 0 4px 12px rgba(0, 0, 0, 0.55);
+}
+.unit-cd-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    conic-gradient(#f3f5f8 0%, #aab1bc calc(var(--p) * 0.5%), #6f7681 calc(var(--p) * 1%),
+                   transparent calc(var(--p) * 1%) 100%),
+    linear-gradient(160deg, #2c3139 0%, #15181d 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring) + 1px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring) + 1px));
+}
+.unit-cd-core {
+  position: absolute;
+  inset: calc(var(--ring) + 2px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 35% 30%, #4a505a 0%, #2a2e35 70%, #1c1f25 100%);
+  box-shadow: inset 0 0 0 1px #1f232a, inset 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+.unit-cd-core em {
+  font-style: normal;
+  font-size: 15px;
+  font-weight: 800;
+  color: #f3f5f8;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+/* 기절 · 둔화 — 체력 막대 위의 작은 표 */
+.unit-hud.unit-stunned::after,
+.unit-hud.unit-slowed::after,
+.unit-hud.unit-burning::after,
+.unit-hud.unit-heat::after {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, -3px);
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.unit-hud.unit-stunned::after { content: '기절'; color: #3a2a00; background: #ffd84a; box-shadow: 0 0 8px rgba(255, 216, 74, 0.7); }
+.unit-hud.unit-slowed::after  { content: '둔화'; color: #032c44; background: #8fdcff; box-shadow: 0 0 8px rgba(120, 210, 255, 0.7); }
+.unit-hud.unit-burning::after { content: '화상'; color: #fff4e6; background: linear-gradient(180deg, #ffb040, #e2461c); box-shadow: 0 0 12px rgba(255, 120, 30, 0.9); }
+.unit-hud.unit-heat::after    { content: '더위'; color: #fff4e6; background: linear-gradient(180deg, #ff8a3c, #d8331a); box-shadow: 0 0 10px rgba(255, 110, 40, 0.8); }
+
+/* 유닛 머리 위 — 왼쪽 원 안에 영혼 수, 오른쪽에 체력 막대 (#fx-layer, 맵 좌표) */
+.unit-hud {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  pointer-events: none;
+  z-index: 27;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+.unit-souls {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 40% 35%, #6d4bb8 0%, #2a1850 70%, #140a2a 100%);
+  border: 2px solid #c9b4ff;
+  box-shadow: 0 0 8px rgba(170, 130, 255, 0.85), inset 0 0 6px rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.unit-souls b { font-weight: 900; }
+.unit-hp {
+  position: relative;
+  width: 76px;
+  height: 16px;
+  border-radius: 8px;
+  background: rgba(10, 10, 16, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  overflow: hidden;
+}
+.unit-hp i {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 100%;
+  background: linear-gradient(180deg, #ff7a86, #d8263a);
+  transition: width 0.25s ease-out;
+}
+.unit-mine .unit-hp i { background: linear-gradient(180deg, #7fc0ff, #2f7fe0); }
+.unit-hp em {
+  position: absolute;
+  inset: 0;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 13px;
+  text-align: center;
+  color: #fff;
+  -webkit-text-stroke: 2px #000;
+  paint-order: stroke fill;
+}
+.unit-split .unit-souls { border-color: #8f86a8; box-shadow: 0 0 5px rgba(140, 120, 200, 0.6); }
+.unit-hud.soul-pop .unit-souls { animation: soul-pop 0.45s ease-out; }
+@keyframes soul-pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.45); box-shadow: 0 0 18px rgba(200, 170, 255, 1); }
+  100% { transform: scale(1); }
+}
+/* 소환 유닛이 맞은 피해 — 크게 튀어 오른다 */
+.unit-dmg {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  font-size: 44px;
+  font-weight: 900;
+  line-height: 1;
+  color: #ff4a55;
+  -webkit-text-stroke: 5px #000;
+  paint-order: stroke fill;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.7), 0 0 18px rgba(255, 60, 70, 0.6);
+  pointer-events: none;
+  z-index: 29;
+  animation: unit-dmg-rise 1.3s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+.unit-dmg.big { font-size: 58px; color: #ff2d3c; }
+@keyframes unit-dmg-rise {
+  0%   { opacity: 0; transform: translate(-50%, -40%) scale(0.4); }
+  12%  { opacity: 1; transform: translate(-50%, -100%) scale(1.35); }
+  26%  { opacity: 1; transform: translate(-50%, -110%) scale(1); }
+  75%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -210%) scale(0.95); }
+}
+/* 유령 — 영혼 원 없이 체력 막대만 */
+.unit-ghost .unit-souls { display: none; }
+.unit-ghost .unit-hp { width: 54px; }
+/* 유령이 타워에 닿았다 — 창백한 빛이 번지며 흩어진다 */
+.fx-ghost-touch {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 27;
+  background: radial-gradient(circle, rgba(240, 248, 255, 0.95) 0%, rgba(190, 215, 235, 0.6) 30%, rgba(150, 175, 200, 0) 70%);
+  transform: translate(-50%, -50%) scale(0.2);
+  animation: fx-ghost-touch 1s ease-out forwards;
+}
+@keyframes fx-ghost-touch {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+  20%  { opacity: 1; transform: translate(-50%, -50%) scale(0.9); }
+  100% { opacity: 0; transform: translate(-50%, -80%) scale(1.5); }
+}
+
+/* 낫 베기 — 리퍼가 휘두른 궤적을 따라 그어지는 초승달 (js/units.js _uSlashFx가 스테이지 좌표로 그린다) */
+.fx-reaper-slash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1600px;
+  height: 900px;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 26;
+}
+.fx-reaper-shard {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background: #1a1424;
+  border: 1px solid #b9a4ff;
+  transform: translate(-50%, -50%) rotate(45deg);
+  pointer-events: none;
+  z-index: 26;
+  animation: rs-shard 0.65s ease-out forwards;
+}
+@keyframes rs-shard {
+  to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(260deg) scale(0.3); opacity: 0; }
+}
+
+/* 땅에서 솟는 흑백 나선 — 바닥에 누운 작은 포탈 */
+.fx-reaper-rise {
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scaleY(0.42);
+  /* 컷씬 포탈과 같은 모습 — 검은 속 · 하얗게 달아오른 붉은 네온 고리 · 바깥의 붉은 소용돌이 결 */
+  background:
+    radial-gradient(circle, #000 0 32%, #fff0f0 35%, #ff2536 39%, rgba(255, 37, 54, 0) 46%),
+    repeating-conic-gradient(from 0deg, rgba(255, 30, 50, 0.9) 0 10deg, rgba(50, 0, 6, 0.95) 10deg 26deg);
+  -webkit-mask: radial-gradient(circle, #000 58%, transparent 71%);
+          mask: radial-gradient(circle, #000 58%, transparent 71%);
+  box-shadow: 0 0 30px rgba(255, 40, 60, 0.8);
+  pointer-events: none;
+  z-index: 4;
+  animation: rise-portal 1.5s ease-out forwards;
+}
+.fx-reaper-rise.small { width: 90px; height: 90px; }
+@keyframes rise-portal {
+  0%   { transform: translate(-50%, -50%) scaleY(0.42) scale(0.1) rotate(0deg); opacity: 0; }
+  20%  { transform: translate(-50%, -50%) scaleY(0.42) scale(1) rotate(160deg); opacity: 1; }
+  70%  { transform: translate(-50%, -50%) scaleY(0.42) scale(1) rotate(560deg); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scaleY(0.42) scale(0.2) rotate(760deg); opacity: 0; }
+}
+
+/* 쓰러짐 — 검은 연기 · 날아가는 영혼 */
+.fx-reaper-smoke {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle at 35% 55%, rgba(20, 14, 30, 0.95) 0 20%, transparent 42%),
+    radial-gradient(circle at 65% 45%, rgba(40, 26, 60, 0.9) 0 18%, transparent 40%),
+    radial-gradient(circle at 50% 35%, rgba(90, 60, 140, 0.6) 0 16%, transparent 40%);
+  filter: blur(4px);
+  pointer-events: none;
+  z-index: 26;
+  animation: reaper-smoke 1.2s ease-out forwards;
+}
+@keyframes reaper-smoke {
+  0%   { transform: translate(-50%, -30%) scale(0.4); opacity: 0.9; }
+  100% { transform: translate(-50%, -80%) scale(1.8); opacity: 0; }
+}
+.fx-reaper-soul {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0 22%, #bfaaff 45%, rgba(120, 80, 255, 0) 72%);
+  box-shadow: 0 0 16px rgba(190, 160, 255, 0.95);
+  pointer-events: none;
+  z-index: 27;
+  transform: translate(-50%, -50%);
+}
+
+/* ── 컷씬 — 화면 전체 ── */
+.reaper-cut {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  background: #000;
+  overflow: hidden;
+  animation: reaper-cut-in 0.12s ease-out;
+}
+.reaper-cut.reaper-cut-out { animation: reaper-cut-out 0.25s ease-in forwards; }
+@keyframes reaper-cut-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes reaper-cut-out { to { opacity: 0; } }
+.reaper-cut-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.reaper-cut-black, .reaper-cut-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.reaper-cut-black { background: #000; opacity: 1; }
+.reaper-cut-flash { background: radial-gradient(circle at 45% 50%, #fff 0%, #d9ccff 40%, rgba(160, 120, 255, 0.3) 100%); opacity: 0; }
+.reaper-cut-title {
+  position: absolute;
+  left: 50%;
+  bottom: 13vh;
+  transform: translate(-50%, 14px);
+  z-index: 3;
+  opacity: 0;
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.reaper-cut-title .rct-name {
+  display: block;
+  font-size: clamp(34px, 5.4vw, 72px);
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: #f1ecff;
+  text-shadow: 0 0 18px rgba(160, 120, 255, 0.95), 0 0 42px rgba(120, 70, 255, 0.7), 0 4px 0 #000;
+}
+.reaper-cut-title .rct-by {
+  display: block;
+  margin-top: 6px;
+  font-size: clamp(14px, 1.6vw, 20px);
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: #cbbcf2;
+  text-shadow: 0 2px 6px #000;
+}
+
+/* 컷씬 2판 — 비네팅 · 화면을 가르는 베기 · 갈라져 벌어지는 두 조각 */
+.reaper-cut-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(ellipse at 50% 45%, rgba(0, 0, 0, 0) 45%, rgba(8, 2, 20, 0.75) 100%);
+}
+.reaper-cut.reaper-cut-open {
+  background: transparent;
+}
+.reaper-cut-half {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  will-change: transform, opacity;
+}
+.reaper-cut-flash.violet {
+  background: radial-gradient(circle at 50% 50%, #f1e8ff 0%, #9d6bff 45%, rgba(60, 20, 140, 0.4) 100%);
+}
+/* 화면을 가르는 빛줄기 — 왼쪽 위에서 오른쪽 아래로 (갈라지는 선과 같은 각도 24°) */
+.reaper-cut-slash {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 160vmax;
+  height: 10px;
+  margin: -5px 0 0 -80vmax;
+  transform: rotate(24deg) scaleX(0);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, #fff 20%, #fff 80%, rgba(255, 255, 255, 0) 100%);
+  box-shadow: 0 0 18px 6px rgba(190, 150, 255, 0.95), 0 0 60px 18px rgba(120, 70, 255, 0.6);
+  border-radius: 5px;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0;
+}
+.reaper-cut-slash.on {
+  opacity: 1;
+  animation: rct-slash 0.14s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+@keyframes rct-slash {
+  from { transform: rotate(24deg) scaleX(0); }
+  to   { transform: rotate(24deg) scaleX(1); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   침수 · 파도 (board.js CAST_STYLES.flood / wave)
+════════════════════════════════════════════════════════════ */
+
+/* 침수 조준 — 지진과 같은 칸 네모, 물빛 */
+.cast-area.cast-area-water {
+  border-color: rgba(120, 210, 255, 0.85);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 98px, rgba(150, 220, 255, 0.35) 98px 100px),
+    repeating-linear-gradient(180deg, transparent 0 98px, rgba(150, 220, 255, 0.35) 98px 100px),
+    linear-gradient(180deg, rgba(90, 190, 255, 0.28) 0%, rgba(40, 130, 230, 0.12) 100%);
+  box-shadow: 0 0 14px rgba(80, 180, 255, 0.45), inset 0 0 22px rgba(110, 200, 255, 0.25);
+}
+.cast-area.cast-area-water.cast-arc-ready {
+  border-color: rgba(200, 240, 255, 0.98);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 98px, rgba(190, 236, 255, 0.45) 98px 100px),
+    repeating-linear-gradient(180deg, transparent 0 98px, rgba(190, 236, 255, 0.45) 98px 100px),
+    linear-gradient(180deg, rgba(110, 205, 255, 0.4) 0%, rgba(40, 130, 230, 0.2) 100%);
+  box-shadow: 0 0 22px rgba(90, 190, 255, 0.75), inset 0 0 26px rgba(150, 220, 255, 0.35);
+}
+
+/* 침수 조준 — 내 타워가 범위에 들면 놓을 수 없다 */
+.cast-area.cast-area-water.cast-circle-bad {
+  border-color: rgba(255, 130, 130, 0.9);
+  background: rgba(255, 90, 90, 0.16);
+  box-shadow: 0 0 14px rgba(255, 90, 90, 0.5);
+}
+
+/* 파도 조준 — 상대 진영 맨 앞 3칸 띠 + 맵 끝까지의 길 (#cast-ground 안 — 맵 좌표) */
+.cast-wave {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.cast-wave-band,
+.cast-wave-path {
+  position: absolute;
+  top: 0;
+  box-sizing: border-box;
+  border-radius: 6px;
+}
+.cast-wave-band {
+  border: 3px solid rgba(130, 215, 255, 0.9);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 98px, rgba(170, 230, 255, 0.35) 98px 100px),
+    repeating-linear-gradient(180deg, transparent 0 98px, rgba(170, 230, 255, 0.35) 98px 100px),
+    linear-gradient(90deg, rgba(40, 130, 220, 0.16) 0%, rgba(110, 210, 255, 0.34) 100%);
+  box-shadow: 0 0 16px rgba(90, 190, 255, 0.5), inset 0 0 24px rgba(130, 215, 255, 0.3);
+  animation: cast-arc-breathe 1.2s ease-in-out infinite;
+}
+.cast-wave-path {
+  background: linear-gradient(90deg, rgba(120, 210, 255, 0.24) 0%, rgba(120, 210, 255, 0.08) 75%, rgba(120, 210, 255, 0) 100%);
+  box-shadow: inset 0 0 0 1px rgba(160, 225, 255, 0.28);
+}
+.cast-wave-path::after {
+  /* 밀려가는 방향 — 흐르는 물결 무늬 */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, rgba(200, 240, 255, 0) 0 60px, rgba(200, 240, 255, 0.22) 60px 70px, rgba(200, 240, 255, 0) 70px 100px);
+  animation: cast-wave-flow 0.9s linear infinite;
+}
+@keyframes cast-wave-flow { to { background-position: 100px 0; } }
+.cast-wave.cast-arc-ready .cast-wave-band {
+  border-color: rgba(220, 245, 255, 1);
+  box-shadow: 0 0 24px rgba(110, 205, 255, 0.85), inset 0 0 28px rgba(170, 230, 255, 0.4);
+  animation: none;
+}
+.cast-wave.cast-circle-bad .cast-wave-band {
+  border-color: rgba(255, 130, 130, 0.9);
+  background: rgba(255, 90, 90, 0.16);
+  box-shadow: 0 0 14px rgba(255, 90, 90, 0.5);
+}
+.cast-wave.cast-circle-bad .cast-wave-path { opacity: 0.25; }
+
+/* ── 침수 연출 (#cast-ground 안 — 바닥에 눕는다) ── */
+.flood-area {
+  /* 물 — 지진 금·돌 자국(z 1) 위에 반투명으로 덮여 그 아래가 비쳐 보이고,
+     토템 풀밭·조준 표시(z 3)는 물 위에 그대로 보인다 */
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: 8px;
+  overflow: hidden;
+}
+/* 물살은 캔버스가 그린다 (board.js _floodDraw) — 반투명이라 타일 결이 비쳐 보인다 */
+.flood-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* 잠긴 타워 발밑의 물결 */
+.flood-ring {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 3;
+  border: 4px solid rgba(220, 245, 255, 0.75);
+  animation: flood-ring 1.1s ease-out infinite;
+}
+@keyframes flood-ring {
+  from { transform: scale(0.5); opacity: 0.95; }
+  to   { transform: scale(1.6); opacity: 0; }
+}
+/* 물살 앞의 물보라 (#fx-layer — 서 있는 연출) */
+.flood-spray {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 24;
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #bfe9ff 55%, rgba(120, 200, 255, 0) 100%);
+  animation: flood-spray 0.55s cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
+}
+.flood-spray.big {
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  animation-duration: 0.6s;
+}
+@keyframes flood-spray {
+  0%   { transform: translate(0, 0) scale(0.6); opacity: 1; }
+  60%  { opacity: 1; }
+  100% { transform: translate(var(--dx), calc(var(--dy) + 40px)) scale(1.1); opacity: 0; }
+}
+
+/* ── 파도 연출의 바닥 쪽 (#cast-ground 안) ── */
+.wave-burst {
+  position: absolute;
+  z-index: 2;   /* 물 — 지진 금·돌 자국(1) 위에 반투명으로, 토템 풀밭·조준 표시(3) 아래 */
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.4);
+  border-radius: 40%;
+  background: radial-gradient(ellipse at center, rgba(230, 250, 255, 0.9) 0%, rgba(120, 210, 255, 0.55) 35%, rgba(60, 160, 240, 0) 70%);
+  animation: wave-burst 1.3s ease-out forwards;
+}
+@keyframes wave-burst {
+  0%   { transform: translate(-50%, -50%) scale(0.3, 0.8); opacity: 1; }
+  40%  { opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(2.4, 1.15); opacity: 0; }
+}
+.wave-wet {
+  position: absolute;
+  z-index: 2;   /* 물 — 지진 금·돌 자국(1) 위에 반투명으로, 토템 풀밭·조준 표시(3) 아래 */
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(20, 60, 110, 0.05) 0%, rgba(20, 70, 130, 0.32) 85%, rgba(60, 150, 230, 0.4) 100%);
+}
+.wave-pool {
+  position: absolute;
+  z-index: 2;   /* 물 — 지진 금·돌 자국(1) 위에 반투명으로, 토템 풀밭·조준 표시(3) 아래 */
+  pointer-events: none;
+  border-radius: 10px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 30% 35%, rgba(220, 245, 255, 0.25) 0 6%, transparent 14%),
+    radial-gradient(circle at 70% 65%, rgba(220, 245, 255, 0.22) 0 5%, transparent 12%),
+    linear-gradient(180deg, rgba(60, 160, 235, 0.45) 0%, rgba(20, 100, 195, 0.5) 100%);
+  background-size: 140px 140px, 140px 140px, 100% 100%;
+  box-shadow: inset 0 0 30px rgba(0, 40, 110, 0.5);
+  animation: flood-caustic 3s linear infinite;
+}
+@keyframes flood-caustic { to { background-position: 140px 70px, -140px 70px, 0 0; } }
+/* WebGL이 없을 때 — 바닥에 눕는 물 띠가 밀려간다 */
+.wave-band-flat {
+  position: absolute;
+  z-index: 2;   /* 물 — 지진 금·돌 자국(1) 위에 반투명으로, 토템 풀밭·조준 표시(3) 아래 */
+  pointer-events: none;
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(20, 90, 180, 0.2) 0%, rgba(40, 140, 225, 0.75) 70%, rgba(230, 248, 255, 0.95) 92%, rgba(255, 255, 255, 0) 100%);
+}
+
+/* 물마루가 드리운 그림자 (파도 앞 바닥) */
+.wave-shadow {
+  position: absolute;
+  z-index: 2;   /* 물 — 지진 금·돌 자국(1) 위에 반투명으로, 토템 풀밭·조준 표시(3) 아래 */
+  pointer-events: none;
+  transform-origin: 0 0;
+  background: linear-gradient(90deg, rgba(0, 20, 50, 0.55) 0%, rgba(0, 20, 50, 0.25) 45%, rgba(0, 20, 50, 0) 100%);
+}
+
+/* ════════════════════════════════════════════════════════════
+   토템 지속 시간 · 가시 · 톱 (2026-10-01)
+════════════════════════════════════════════════════════════ */
+
+/* 토템 머리 위 지속 시간 게이지 — 그림리퍼 낫 대기 게이지(.unit-cd)와 같은 모양, 초록.
+   --p: 남은 시간(100 → 0) — board.js _totemGauge */
+.totem-cd {
+  --ring: 6px;
+  --p: 100;
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 28;
+  background: #13241a;
+  box-shadow: 0 0 0 2px #13241a, 0 4px 12px rgba(0, 0, 0, 0.55), 0 0 12px rgba(80, 220, 120, 0.35);
+}
+.totem-cd-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    conic-gradient(#b8ffcb 0%, #4fdc7c calc(var(--p) * 0.5%), #23a654 calc(var(--p) * 1%),
+                   transparent calc(var(--p) * 1%) 100%),
+    linear-gradient(160deg, #22372a 0%, #0f1a13 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring) + 1px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring) + 1px));
+}
+.totem-cd-core {
+  position: absolute;
+  inset: calc(var(--ring) + 2px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 35% 30%, #3f5a47 0%, #24362a 70%, #18241c 100%);
+  box-shadow: inset 0 0 0 1px #13241a, inset 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+.totem-cd-core em {
+  font-style: normal;
+  font-size: 15px;
+  font-weight: 800;
+  color: #e9ffef;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+/* 가시 — 범위 칸의 땅이 어둡게 부풀며 금이 번지고, 가시가 꺼질 때 함께 옅어진다 (#cast-ground 안) */
+.thorn-ground {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 10px;
+  background:
+    radial-gradient(ellipse 55% 55% at 50% 50%, rgba(40, 26, 14, 0.75) 0%, rgba(60, 40, 22, 0.5) 55%, rgba(60, 40, 22, 0) 100%);
+  animation: thorn-ground var(--life, 2800ms) ease-out forwards;
+}
+@keyframes thorn-ground {
+  0%   { opacity: 0; transform: scale(0.85); }
+  12%  { opacity: 0.9; transform: scale(1.02); }
+  16%  { transform: scale(1); }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+/* 땅이 갈라지는 금 — 가운데에서 바깥으로 번진다 */
+.thorn-crack {
+  position: absolute;
+  inset: 6%;
+  background:
+    linear-gradient(28deg,  transparent 47%, rgba(20, 10, 4, 0.9) 48%, rgba(20, 10, 4, 0.9) 50%, transparent 51%),
+    linear-gradient(-34deg, transparent 47%, rgba(20, 10, 4, 0.85) 48%, rgba(20, 10, 4, 0.85) 50%, transparent 51%),
+    linear-gradient(88deg,  transparent 48%, rgba(20, 10, 4, 0.8) 49%, rgba(20, 10, 4, 0.8) 50.5%, transparent 51.5%),
+    linear-gradient(-72deg, transparent 48%, rgba(20, 10, 4, 0.75) 49%, rgba(20, 10, 4, 0.75) 50.5%, transparent 51.5%);
+  -webkit-mask: radial-gradient(circle, #000 0%, #000 var(--crack, 0%), transparent calc(var(--crack, 0%) + 8%));
+          mask: radial-gradient(circle, #000 0%, #000 var(--crack, 0%), transparent calc(var(--crack, 0%) + 8%));
+  animation: thorn-crack var(--rise, 420ms) ease-in forwards;
+}
+@property --crack { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+@keyframes thorn-crack { to { --crack: 75%; } }
+.thorn-flat {
+  position: absolute;
+  z-index: 3;
+  font-size: 54px;
+  transform: translate(-50%, -70%);
+  pointer-events: none;
+  animation: thorn-flat 0.18s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+@keyframes thorn-flat { from { transform: translate(-50%, -10%) scale(0.2, 0.1); } to { transform: translate(-50%, -70%) scale(1); } }
+
+/* 톱 조준 (2026-10-03) — #cast-ground 안, 맵 좌표의 커서 자리에 놓인다.
+   닿는 거리(점선 원) · 가장 가까운 대상까지 쇠빛 선 · 그 대상 발밑 네모 */
+.cast-saw-aim {
+  position: absolute;
+  z-index: 3;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.cast-saw-reach {
+  position: absolute;
+  left: calc(-1 * var(--reach, 220px));
+  top: calc(-1 * var(--reach, 220px));
+  width: calc(2 * var(--reach, 220px));
+  height: calc(2 * var(--reach, 220px));
+  border-radius: 50%;
+  border: 2px dashed rgba(220, 228, 236, 0.35);
+  background: radial-gradient(circle, rgba(210, 220, 230, 0.08) 0%, rgba(210, 220, 230, 0) 70%);
+}
+.cast-saw-aim.cast-arc-ready .cast-saw-reach { border-color: rgba(230, 236, 242, 0.55); }
+.cast-saw-dot {
+  position: absolute;
+  left: -9px;
+  top: -9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(230, 236, 242, 0.9);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+}
+.cast-saw-line {
+  position: absolute;
+  left: 0;
+  top: -4px;
+  height: 8px;
+  width: 0;
+  transform-origin: 0 50%;
+  border-radius: 4px;
+  background: repeating-linear-gradient(90deg, rgba(235, 240, 246, 0.95) 0 12px, rgba(150, 160, 172, 0.7) 12px 17px);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.45);
+}
+.cast-saw-mark {
+  position: absolute;
+  display: none;
+  border-radius: 10px;
+  border: 4px solid rgba(255, 110, 90, 0.95);
+  box-shadow: 0 0 18px rgba(255, 110, 90, 0.7), inset 0 0 14px rgba(255, 110, 90, 0.35);
+  animation: cast-arc-breathe 0.9s ease-in-out infinite;
+}
+.cast-saw-mark.cast-saw-mark-totem {
+  border-color: rgba(255, 214, 90, 0.95);
+  box-shadow: 0 0 18px rgba(255, 214, 90, 0.75), inset 0 0 14px rgba(255, 214, 90, 0.35);
+}
+
+.saw-flat {
+  position: absolute;
+  z-index: 30;
+  font-size: 60px;
+  pointer-events: none;
+  transform: translate(-80%, -50%);
+  animation: saw-flat 0.5s ease-in-out infinite;
+}
+.saw-flat-left { transform: translate(-20%, -50%) scaleX(-1); animation-name: saw-flat-left; }
+.saw-flat.saw-flat-out { animation: none; opacity: 0; transition: opacity 0.3s; }
+@keyframes saw-flat      { 50% { transform: translate(-50%, -50%); } }
+@keyframes saw-flat-left { 50% { transform: translate(-50%, -50%) scaleX(-1); } }
+
+/* 톱 — 좌클릭을 꾹 누르는 동안 커서 자리에 차오르는 원 (다 차면 썰기 시작) */
+
+/* ════════════════════════════════════════════════════════════
+   불덩이 · 폭염 · 벽돌 · 철벽 (2026-10-02)
+════════════════════════════════════════════════════════════ */
+/* 불덩이 조준 — 포물선 끝(칸 네 개가 만나는 점)의 표식 · 2×2 착지 칸은 불빛 */
+.cast-throw-fire .cast-throw-path { stroke: rgba(255, 150, 70, 0.9); }
+.cast-throw-dot {
+  position: fixed;
+  width: 18px; height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 200, 120, 0.95);
+  background: radial-gradient(circle, #fff3c8 0 22%, rgba(255, 140, 40, 0.75) 40%, rgba(255, 90, 20, 0) 72%);
+  box-shadow: 0 0 14px rgba(255, 120, 30, 0.9);
+  pointer-events: none;
+  animation: fire-dot 0.9s ease-in-out infinite;
+}
+@keyframes fire-dot { 50% { transform: scale(1.25); } }
+.cast-throw-fire.cast-circle-bad .cast-throw-dot { border-color: rgba(255, 120, 120, 0.9); box-shadow: 0 0 10px rgba(255, 60, 60, 0.7); }
+.cast-throw-land.cast-throw-fire-land {
+  border-color: rgba(255, 160, 80, 0.85);
+  background: rgba(255, 110, 40, 0.14);
+  box-shadow: 0 0 16px rgba(255, 110, 30, 0.5), inset 0 0 22px rgba(255, 140, 60, 0.3);
+}
+.cast-lands.cast-arc-ready .cast-throw-land.cast-throw-fire-land {
+  border-color: rgba(255, 214, 150, 0.98);
+  background: rgba(255, 120, 40, 0.28);
+  box-shadow: 0 0 24px rgba(255, 120, 30, 0.85), inset 0 0 26px rgba(255, 170, 80, 0.45);
+}
+
+/* 날아가는 화염 덩이 — 진행 방향(+x)으로 머리, 뒤로 꼬리가 늘어진다 */
+.fireball-fly {
+  position: absolute;
+  left: 0; top: 0;
+  width: 0; height: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+.fireball-fly i { position: absolute; display: block; border-radius: 50%; }
+.fb-glow {
+  width: 150px; height: 150px; left: -75px; top: -75px;
+  background: radial-gradient(circle, rgba(255, 170, 60, 0.55) 0%, rgba(255, 90, 20, 0.22) 38%, rgba(255, 60, 0, 0) 70%);
+  mix-blend-mode: screen;
+  animation: fb-glow 0.16s ease-in-out infinite alternate;
+}
+.fb-flame {
+  width: 120px; height: 54px; left: -104px; top: -27px;
+  background:
+    radial-gradient(ellipse 34% 46% at 86% 50%, #fff7d6 0%, #ffd45a 30%, rgba(255, 150, 30, 0) 100%),
+    radial-gradient(ellipse 70% 50% at 80% 50%, rgba(255, 150, 40, 0.95) 0%, rgba(240, 70, 10, 0.75) 45%, rgba(160, 20, 0, 0) 100%);
+  filter: blur(1.5px);
+  transform-origin: 86% 50%;
+  animation: fb-flame 0.11s ease-in-out infinite alternate;
+}
+.fb-core {
+  width: 34px; height: 34px; left: -17px; top: -17px;
+  background: radial-gradient(circle at 42% 40%, #fffdf2 0%, #ffe88a 35%, #ff9a2a 70%, #e0400a 100%);
+  box-shadow: 0 0 18px 6px rgba(255, 140, 40, 0.8), 0 0 40px 10px rgba(255, 80, 10, 0.45);
+  animation: fb-core 0.09s ease-in-out infinite alternate;
+}
+@keyframes fb-glow  { to { transform: scale(1.12); opacity: 0.85; } }
+@keyframes fb-flame { from { transform: scale(1, 1); } to { transform: scale(1.18, 0.86) skewY(3deg); } }
+@keyframes fb-core  { to { transform: scale(0.9); filter: brightness(1.15); } }
+.fb-ember {
+  position: absolute;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff1b8 0%, #ffa23a 45%, rgba(255, 80, 10, 0) 100%);
+  pointer-events: none;
+  z-index: 29;
+  animation: fb-ember 0.62s ease-out forwards;
+}
+@keyframes fb-ember {
+  to { transform: translate(var(--ex), var(--ey)) scale(0.2); opacity: 0; }
+}
+
+/* 떨어지는 순간 · 폭발의 섬광 */
+.fire-impact {
+  position: absolute;
+  width: 280px; height: 280px;
+  margin: -140px 0 0 -140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffbe6 0%, rgba(255, 210, 110, 0.9) 18%, rgba(255, 120, 30, 0.55) 42%, rgba(220, 50, 0, 0) 70%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 28;
+  animation: fire-impact 0.6s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+.fire-impact-big { width: 620px; height: 620px; margin: -310px 0 0 -310px; animation-duration: 0.85s; }
+@keyframes fire-impact {
+  0%   { transform: scale(0.15); opacity: 1; }
+  35%  { opacity: 0.95; }
+  100% { transform: scale(1.15); opacity: 0; }
+}
+
+/* 불탄 바닥 — 바닥판 안(타일과 함께 눕는다). 이글거리는 불빛 → 식어서 그을음만 남았다 사라진다 */
+.fire-scorch {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 18%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(20, 10, 6, 0.75) 0%, rgba(30, 14, 8, 0.55) 45%, rgba(40, 20, 10, 0) 72%);
+  animation: scorch-life var(--life) linear forwards;
+}
+.fire-scorch::before {
+  content: '';
+  position: absolute;
+  inset: -12%;
+  border-radius: 30%;
+  background:
+    radial-gradient(circle at 30% 35%, rgba(255, 170, 60, 0.75) 0 3%, transparent 6%),
+    radial-gradient(circle at 68% 62%, rgba(255, 120, 30, 0.7) 0 3%, transparent 6%),
+    radial-gradient(circle at 55% 28%, rgba(255, 200, 90, 0.6) 0 2%, transparent 5%),
+    radial-gradient(circle at 38% 70%, rgba(255, 140, 40, 0.65) 0 2.5%, transparent 5.5%),
+    radial-gradient(ellipse at 50% 50%, rgba(255, 120, 30, 0.6) 0%, rgba(255, 70, 10, 0.3) 40%, rgba(255, 50, 0, 0) 70%);
+  mix-blend-mode: screen;
+  animation: scorch-glow 0.23s ease-in-out infinite alternate, scorch-cool var(--life) linear forwards;
+}
+@keyframes scorch-life { 0% { opacity: 0; } 4% { opacity: 1; } 78% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes scorch-glow { to { filter: brightness(1.35); transform: scale(1.03); } }
+@keyframes scorch-cool { 0%, 62% { opacity: 1; } 100% { opacity: 0; } }
+
+/* 폭염 바닥 — 달아오름(--charge) → 폭발 · 불탐(--burn) → 열기(--heat)가 일렁인다 */
+.heat-ground {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 10px;
+  animation: heat-out 0.9s ease-in calc(var(--life) - 900ms) forwards;
+}
+.heat-ground::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 150, 50, 0.55), rgba(255, 70, 20, 0.25) 60%, rgba(255, 40, 0, 0.05));
+  box-shadow: inset 0 0 40px rgba(255, 120, 40, 0.6), 0 0 30px rgba(255, 90, 20, 0.5);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: heat-charge var(--charge) ease-in forwards, heat-blast var(--burn) ease-out var(--charge) forwards;
+}
+.heat-ground::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background:
+    radial-gradient(ellipse 30% 18% at 30% 40%, rgba(255, 150, 70, 0.22), transparent 70%),
+    radial-gradient(ellipse 26% 16% at 70% 65%, rgba(255, 130, 60, 0.2), transparent 70%),
+    radial-gradient(ellipse 30% 20% at 50% 20%, rgba(255, 160, 80, 0.18), transparent 70%),
+    linear-gradient(180deg, rgba(255, 90, 30, 0.12), rgba(255, 60, 20, 0.2));
+  background-size: 100% 50%, 100% 50%, 100% 50%, 100% 100%;
+  filter: blur(2px);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: heat-fade 0.8s ease-out calc(var(--charge) + var(--burn)) forwards,
+             heat-wave 2.4s linear calc(var(--charge) + var(--burn)) infinite;
+}
+@keyframes heat-charge { 0% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes heat-blast  { 0% { opacity: 1; filter: brightness(1.8); } 100% { opacity: 0.18; filter: none; } }
+@keyframes heat-fade   { to { opacity: 1; } }
+@keyframes heat-wave   { to { background-position: 0 -100%, 0 -100%, 0 -100%, 0 0; } }
+@keyframes heat-out    { to { opacity: 0; } }
+
+.fire-flat {
+  position: absolute;
+  transform: translate(-50%, -80%);
+  font-size: 54px;
+  pointer-events: none;
+  animation: fire-flat 0.3s ease-in-out infinite alternate;
+}
+@keyframes fire-flat { to { transform: translate(-50%, -84%) scale(1.08, 1.12); } }
+
+/* 더위 속 타워 — 체력 숫자 위의 작은 표 */
+.tower.tower-heat .tower-hp::after {
+  content: '더위';
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, -2px);
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  color: #fff4e6;
+  background: linear-gradient(180deg, #ff8a3c, #d8331a);
+  box-shadow: 0 0 10px rgba(255, 110, 40, 0.8);
+  pointer-events: none;
+  animation: heat-badge 0.8s ease-in-out infinite alternate;
+}
+@keyframes heat-badge { to { box-shadow: 0 0 16px rgba(255, 140, 60, 1); } }
+
+/* WebGL이 없을 때의 방벽 — 타워 테두리만 */
+.tower.tower-wall-flat .tower-block { outline: 4px solid rgba(190, 120, 80, 0.85); outline-offset: 6px; border-radius: 12px; }
+
+/* 벽돌 · 철벽 방어막 게이지 (2026-10-02) — 타워 기둥 한가운데. 그림리퍼 낫 대기 게이지(.unit-cd)와 같은 모양, 파란 그라데이션.
+   --p: 남은 시간(100 → 0) — board.js _wallGaugeStep */
+.wall-cd {
+  --ring: 6px;
+  --p: 100;
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 28;
+  background: #121c2c;
+  box-shadow: 0 0 0 2px #121c2c, 0 4px 12px rgba(0, 0, 0, 0.55), 0 0 12px rgba(80, 150, 255, 0.35);
+}
+.wall-cd-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    conic-gradient(#d4e8ff 0%, #5aa2ff calc(var(--p) * 0.5%), #1d5fd6 calc(var(--p) * 1%),
+                   transparent calc(var(--p) * 1%) 100%),
+    linear-gradient(160deg, #22304a 0%, #0e1522 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring) + 1px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring) + 1px));
+}
+.wall-cd-core {
+  position: absolute;
+  inset: calc(var(--ring) + 2px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 35% 30%, #3e5274 0%, #23314a 70%, #172134 100%);
+  box-shadow: inset 0 0 0 1px #121c2c, inset 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+.wall-cd-core em {
+  font-style: normal;
+  font-size: 15px;
+  font-weight: 800;
+  color: #eaf3ff;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+/* ════════════════════════════════════════════════════════════
+   상성 (2026-10-02) — 물에 꺼진 불 · 얼음전개 · 날아가고 타고 시드는 토템
+════════════════════════════════════════════════════════════ */
+
+/* 물에 꺼진 불 — 그을린 바닥 · 열기가 젖은 잿빛으로 식어 사라진다 */
+.fire-scorch.fire-doused,
+.heat-ground.fire-doused {
+  animation: fire-douse 0.9s ease-out forwards !important;
+}
+.fire-scorch.fire-doused::before,
+.heat-ground.fire-doused::before,
+.heat-ground.fire-doused::after {
+  animation: none !important;
+  opacity: 0 !important;
+  transition: opacity 0.35s ease-out;
+}
+@keyframes fire-douse {
+  0%   { opacity: 1; filter: none; }
+  30%  { opacity: 0.9; filter: grayscale(1) brightness(0.55) saturate(0); }
+  100% { opacity: 0; filter: grayscale(1) brightness(0.5); }
+}
+.fire-flat.fire-doused { animation: fire-flat-out 0.4s ease-in forwards; }
+@keyframes fire-flat-out { to { opacity: 0; transform: translate(-50%, -60%) scale(0.4); } }
+
+/* 꺼지는 순간의 김 — 흰 김이 쉭 하고 위로 퍼진다 (서 있는 연출이라 화면 좌표) */
+.fire-hiss {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  margin: -100px 0 0 -60px;
+  pointer-events: none;
+  z-index: 26;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 70%, rgba(245, 250, 255, 0.85) 0%, rgba(220, 232, 245, 0.45) 35%, rgba(220, 232, 245, 0) 70%);
+  filter: blur(3px);
+  opacity: 0;
+  animation: fire-hiss 1.1s ease-out forwards;
+}
+@keyframes fire-hiss {
+  0%   { opacity: 0; transform: translateY(20px) scale(0.35, 0.25); }
+  18%  { opacity: 0.95; }
+  100% { opacity: 0; transform: translateY(-70px) scale(1.25, 1.5); }
+}
+
+/* 얼음전개 바닥 — 가운데에서 서리가 번지고(--spread), 얼어 있는 동안 남았다가 녹아 사라진다 (바닥판 안) */
+.ice-ground {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 22% 30%, rgba(255, 255, 255, 0.55) 0 2%, transparent 4%),
+    radial-gradient(circle at 70% 64%, rgba(255, 255, 255, 0.5) 0 1.6%, transparent 3.6%),
+    radial-gradient(circle at 58% 22%, rgba(255, 255, 255, 0.45) 0 1.4%, transparent 3%),
+    radial-gradient(circle at 34% 78%, rgba(255, 255, 255, 0.5) 0 1.8%, transparent 3.8%),
+    repeating-linear-gradient(60deg, rgba(255, 255, 255, 0) 0 22px, rgba(220, 245, 255, 0.28) 23px 24px, rgba(255, 255, 255, 0) 25px 46px),
+    repeating-linear-gradient(-60deg, rgba(255, 255, 255, 0) 0 30px, rgba(220, 245, 255, 0.22) 31px 32px, rgba(255, 255, 255, 0) 33px 60px),
+    radial-gradient(ellipse at 50% 50%, rgba(200, 236, 255, 0.72) 0%, rgba(150, 206, 245, 0.55) 55%, rgba(120, 186, 235, 0.25) 85%, rgba(120, 186, 235, 0) 100%);
+  box-shadow: inset 0 0 30px rgba(220, 245, 255, 0.55), 0 0 26px rgba(140, 210, 255, 0.45);
+  transform: scale(0.05);
+  opacity: 0;
+  animation: ice-spread var(--spread) cubic-bezier(0.2, 0.7, 0.3, 1) forwards,
+             ice-melt 0.8s ease-in calc(var(--life) - 800ms) forwards;
+}
+@keyframes ice-spread { 0% { transform: scale(0.05); opacity: 0; } 30% { opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes ice-melt   { to { opacity: 0; filter: blur(2px) brightness(0.8); } }
+
+/* 폭염에 녹은 얼음물 — 타워 둘레 3×3칸에 물이 고였다 김을 뿜으며 가장자리부터 증발한다 (--life) */
+.ice-pool {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 40%;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.45) 0 3%, transparent 6%),
+    radial-gradient(circle at 66% 62%, rgba(255, 255, 255, 0.35) 0 2.4%, transparent 5%),
+    radial-gradient(ellipse at 50% 50%, rgba(120, 200, 245, 0.62) 0%, rgba(80, 160, 225, 0.5) 50%, rgba(70, 150, 220, 0.18) 80%, rgba(70, 150, 220, 0) 100%);
+  box-shadow: inset 0 0 24px rgba(210, 240, 255, 0.45);
+  opacity: 0;
+  animation: ice-pool var(--life) ease-out forwards;
+}
+@keyframes ice-pool {
+  0%   { opacity: 0; transform: scale(0.4); }
+  12%  { opacity: 1; transform: scale(1.03); }
+  25%  { transform: scale(1); }
+  70%  { opacity: 0.8; transform: scale(0.9); }
+  100% { opacity: 0; transform: scale(0.55); filter: blur(3px); }
+}
+
+/* 차가운 눈가루 — 범위 칸에서 피어올라 흩날린다 */
+.ice-frost-puff {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  margin: -70px 0 0 -45px;
+  pointer-events: none;
+  z-index: 26;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(235, 248, 255, 0.85) 0%, rgba(190, 230, 255, 0.35) 40%, rgba(190, 230, 255, 0) 70%);
+  filter: blur(2px);
+  opacity: 0;
+  animation: ice-frost-puff 1.3s ease-out forwards;
+}
+@keyframes ice-frost-puff {
+  0%   { opacity: 0; transform: scale(0.3); }
+  25%  { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-40px) scale(1.4); }
+}
+
+/* WebGL이 없을 때의 얼음 — 타워가 푸르게 얼어붙는다 */
+.tower.tower-frozen-flat .tower-block {
+  outline: 4px solid rgba(160, 220, 255, 0.9);
+  outline-offset: 4px;
+  border-radius: 10px;
+  filter: hue-rotate(160deg) saturate(0.5) brightness(1.25);
+}
+
+/* 토템 바닥 장식 — 바람에 날아간다 / 불에 타 그을린다 / 열기에 시든다 */
+/* 바람에 쓰러진다 — 밑동을 축으로 바람 쪽으로 넘어가 누운 채 흐려진다 (날아가지 않는다) */
+.cast-fx.totem-blown {
+  transform-origin: 50% 100%;
+  transition: transform 0.6s cubic-bezier(0.55, 0, 1, 0.45) 0.4s, opacity 0.5s ease-in 1.1s;
+  transform: translateX(var(--blow-x, 24px)) rotate(var(--blow-r, 80deg)) !important;
+  opacity: 0 !important;
+}
+/* 듀얼 검 · 바람이 겨눈 상대 토템 — 바닥 장식이 금빛으로 빛난다 */
+.cast-fx.totem-aimed {
+  filter: drop-shadow(0 0 10px rgba(255, 214, 90, 0.95)) brightness(1.25) !important;
+}
+/* 지진 · 바람에 토템 남은 시간이 줄었다 — 게이지 옆에 '-2s' */
+.totem-cut-label {
+  position: absolute;
+  z-index: 40;
+  pointer-events: none;
+  font-weight: 900;
+  font-size: 28px;
+  line-height: 1;
+  color: #ffd84a;
+  -webkit-text-stroke: 1px #3a2a00;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  transform: translate(-50%, -50%);
+  animation: totem-cut-label 1.1s ease-out forwards;
+}
+@keyframes totem-cut-label {
+  0%   { opacity: 0; transform: translate(-50%, -30%) scale(0.6); }
+  18%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -140%) scale(1); }
+}
+/* 톱에 갈렸다 — 풀이 밑동부터 잘려 나가며 옆으로 쓸려 흩어진다 */
+.cast-fx.totem-sawn {
+  transform-origin: 50% 100%;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 1, 1) 0.15s, opacity 0.6s ease-in 0.5s, filter 0.4s;
+  transform: translateX(var(--blow-x, 24px)) scaleY(0.25) skewX(-25deg) !important;
+  filter: brightness(0.85) saturate(0.7);
+  opacity: 0 !important;
+}
+/* 가시에 산산조각 — 튀어 오르듯 부풀었다 부서져 사라진다 */
+.cast-fx.totem-shattered {
+  animation: totem-shattered 0.6s ease-out forwards !important;
+}
+@keyframes totem-shattered {
+  0%   { transform: scale(1); opacity: 1; }
+  25%  { transform: scale(1.12) translateY(-6px); opacity: 1; filter: brightness(1.4); }
+  100% { transform: scale(0.6) translateY(4px); opacity: 0; filter: brightness(0.7) grayscale(0.6); }
+}
+.cast-fx.totem-burnt {
+  transition: filter 0.6s ease-out, opacity 0.7s ease-in 0.6s;
+  filter: sepia(1) saturate(4) hue-rotate(-30deg) brightness(0.45) !important;
+  opacity: 0 !important;
+}
+.cast-fx.totem-withered {
+  transition: filter 0.9s ease-out;
+  filter: sepia(0.85) saturate(0.6) brightness(0.8);
 }

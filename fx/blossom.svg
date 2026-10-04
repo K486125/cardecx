@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  벚꽃(cherry_blossom) — cards.js의 cast: 'blossom'
+  기준점(타워 중심) = (200, 200) · 전체 길이 1.8초
+  2026-09-28: 평소에는 이 그림을 쓰지 않는다. 타워가 입체가 되면서 평면 그림 한 장을
+  건물 위에 얹으면 스티커처럼 떠 보여서, js/towers3d.js의 towers3dSpawnBlossom이
+  꿃잎을 진짜 공간에 띄운다. 이 파일은 WebGL을 못 쓸 때의 대비책으로만 남아 있다.
+
+  회복 카드라 피해처럼 '맞는' 순간이 없다 — 회복은 바로 들어가고(hitMs 0),
+  타워 둘레에 꽃잎이 안에서 바깥으로 피어난 뒤 몇 장이 떠올라 흩어진다.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <radialGradient id="bGlow">
+      <stop offset="0%"   stop-color="#fff3f8" stop-opacity="0.5"/>
+      <stop offset="42%"  stop-color="#ffc2da" stop-opacity="0.3"/>
+      <stop offset="75%"  stop-color="#ffb0d0" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#ffb0d0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bPetal" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%"   stop-color="#ff9dc4"/>
+      <stop offset="45%"  stop-color="#ffc8dd"/>
+      <stop offset="100%" stop-color="#fff7fb"/>
+    </linearGradient>
+    <filter id="bSoft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.1"/>
+    </filter>
+    <filter id="bHalo" x="-70%" y="-70%" width="240%" height="240%">
+      <feGaussianBlur stdDeviation="2.4" result="g"/>
+      <feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- 꽃잎 한 장 — 밑동이 (0,0), 끝이 위쪽. 벚꽃답게 끝이 살짝 팬 모양 -->
+    <g id="bLeaf" filter="url(#bSoft)">
+      <path d="M 0 0 C 7 -5 12.5 -13 10.5 -22 C 9.5 -27 7 -29.5 4.5 -28 C 3 -27 1.5 -26 0 -24 Z" fill="url(#bPetal)"/>
+      <path d="M 0 0 C 7 -5 12.5 -13 10.5 -22 C 9.5 -27 7 -29.5 4.5 -28 C 3 -27 1.5 -26 0 -24 Z" fill="url(#bPetal)" transform="scale(-1,1)"/>
+    </g>
+  </defs>
+
+  <style>
+    .glow, .ring, .drift { transform-box: view-box; transform-origin: 200px 200px; }
+
+    /* 은은한 분홍빛이 먼저 퍼진다 */
+    .glow { animation: glow 1.8s ease-out both; }
+    @keyframes glow {
+      0%   { transform: scale(0.35); opacity: 0; }
+      16%  { transform: scale(1);    opacity: 1; }
+      58%  { opacity: 0.62; }
+      100% { transform: scale(1.14); opacity: 0; }
+    }
+
+    /* 꽃잎이 안에서 바깥으로 피어난다 — 두 겹이 살짝 엇갈려 돈다 */
+    .ring-1 { animation: ring1 1.8s cubic-bezier(0.2, 0.9, 0.3, 1) 0.02s both; }
+    .ring-2 { animation: ring2 1.8s cubic-bezier(0.2, 0.9, 0.3, 1) 0.14s both; }
+
+    @keyframes ring1 {
+      0%   { transform: scale(0.1)  rotate(-20deg); opacity: 0; }
+      12%  { opacity: 1; }
+      34%  { transform: scale(1.05) rotate(5deg); }
+      46%  { transform: scale(1)    rotate(0deg); }
+      72%  { transform: scale(1.03) rotate(4deg);  opacity: 0.95; }
+      100% { transform: scale(1.12) rotate(11deg); opacity: 0; }
+    }
+    @keyframes ring2 {
+      0%   { transform: scale(0.12) rotate(22deg);  opacity: 0; }
+      12%  { opacity: 1; }
+      34%  { transform: scale(1.04) rotate(-5deg); }
+      46%  { transform: scale(1)    rotate(0deg); }
+      72%  { transform: scale(1.02) rotate(-4deg); opacity: 0.9; }
+      100% { transform: scale(1.1)  rotate(-12deg); opacity: 0; }
+    }
+
+    /* 몇 장은 떠올라 흩어진다 */
+    .drift { animation-duration: 1.25s; animation-timing-function: cubic-bezier(0.3, 0.6, 0.4, 1); animation-fill-mode: both; }
+    .d1 { animation-name: d1; animation-delay: 0.42s; }
+    .d2 { animation-name: d2; animation-delay: 0.56s; }
+    .d3 { animation-name: d3; animation-delay: 0.50s; }
+    .d4 { animation-name: d4; animation-delay: 0.66s; }
+    .d5 { animation-name: d5; animation-delay: 0.60s; }
+    .d6 { animation-name: d6; animation-delay: 0.74s; }
+
+    @keyframes d1 {
+      0%   { transform: translate(0,0) rotate(0deg)    scale(0.8); opacity: 0; }
+      18%  { opacity: 0.95; }
+      100% { transform: translate(-62px,-96px) rotate(-150deg) scale(1);   opacity: 0; }
+    }
+    @keyframes d2 {
+      0%   { transform: translate(0,0) rotate(0deg)   scale(0.8); opacity: 0; }
+      18%  { opacity: 0.95; }
+      100% { transform: translate(48px,-104px) rotate(130deg) scale(1);    opacity: 0; }
+    }
+    @keyframes d3 {
+      0%   { transform: translate(0,0) rotate(0deg)   scale(0.75); opacity: 0; }
+      18%  { opacity: 0.9; }
+      100% { transform: translate(-96px,-44px) rotate(-96deg) scale(0.95); opacity: 0; }
+    }
+    @keyframes d4 {
+      0%   { transform: translate(0,0) rotate(0deg)   scale(0.8); opacity: 0; }
+      18%  { opacity: 0.9; }
+      100% { transform: translate(92px,-58px) rotate(112deg)  scale(0.95); opacity: 0; }
+    }
+    @keyframes d5 {
+      0%   { transform: translate(0,0) rotate(0deg)  scale(0.7); opacity: 0; }
+      18%  { opacity: 0.85; }
+      100% { transform: translate(-30px,-118px) rotate(78deg) scale(0.9);  opacity: 0; }
+    }
+    @keyframes d6 {
+      0%   { transform: translate(0,0) rotate(0deg)   scale(0.72); opacity: 0; }
+      18%  { opacity: 0.85; }
+      100% { transform: translate(74px,-92px) rotate(-124deg) scale(0.9);  opacity: 0; }
+    }
+  </style>
+
+  <circle class="glow" cx="200" cy="200" r="118" fill="url(#bGlow)"/>
+
+  <!-- 안쪽 꽃잎 6장 (밑동 반지름 68 — 타워를 덮지 않고 둘레에 핀다) -->
+  <g class="ring ring-1" filter="url(#bHalo)">
+    <use href="#bLeaf" transform="rotate(0 200 200)   translate(200 132) rotate(20)"/>
+    <use href="#bLeaf" transform="rotate(60 200 200)  translate(200 132) rotate(20)"/>
+    <use href="#bLeaf" transform="rotate(120 200 200) translate(200 132) rotate(20)"/>
+    <use href="#bLeaf" transform="rotate(180 200 200) translate(200 132) rotate(20)"/>
+    <use href="#bLeaf" transform="rotate(240 200 200) translate(200 132) rotate(20)"/>
+    <use href="#bLeaf" transform="rotate(300 200 200) translate(200 132) rotate(20)"/>
+  </g>
+
+  <!-- 바깥 꽃잎 9장 (밑동 반지름 96, 조금 작게 — 깊이감) -->
+  <g class="ring ring-2" filter="url(#bHalo)" opacity="0.9">
+    <use href="#bLeaf" transform="rotate(20 200 200)  translate(200 104) rotate(-16) scale(0.86)"/>
+    <use href="#bLeaf" transform="rotate(60 200 200)  translate(200 104) rotate(-16) scale(0.86)"/>
+    <use href="#bLeaf" transform="rotate(100 200 200) translate(200 104) rotate(-16) scale(0.86)"/>
+    <use href="#bLeaf" transform="rotate(140 200 200) translate(200 104) rotate(-16) scale(0.86)"/>
+    <use href="#bLeaf" transform="rotate(180 200 200) translate(200 104) rotate(-16) scale(0.86)"/>
+    <use href="#bLeaf" transform="rotate(220 200 200) translate(200 104) rotate(-16) scale(0.86)"/>
+    <use href="#bLeaf" transform="rotate(260 200 200) translate(200 104) rotate(-16) scale(0.86)"/>
+    <use href="#bLeaf" transform="rotate(300 200 200) translate(200 104) rotate(-16) scale(0.86)"/>
+    <use href="#bLeaf" transform="rotate(340 200 200) translate(200 104) rotate(-16) scale(0.86)"/>
+  </g>
+
+  <!-- 떠올라 흩어지는 꽃잎 -->
+  <g class="drift d1"><use href="#bLeaf" transform="rotate(-24 200 200) translate(200 124) rotate(34)"/></g>
+  <g class="drift d2"><use href="#bLeaf" transform="rotate(38 200 200)  translate(200 118) rotate(-28)"/></g>
+  <g class="drift d3"><use href="#bLeaf" transform="rotate(-72 200 200) translate(200 128) rotate(52)"/></g>
+  <g class="drift d4"><use href="#bLeaf" transform="rotate(88 200 200)  translate(200 122) rotate(-44)"/></g>
+  <g class="drift d5"><use href="#bLeaf" transform="rotate(-8 200 200)  translate(200 112) rotate(18)"/></g>
+  <g class="drift d6"><use href="#bLeaf" transform="rotate(62 200 200)  translate(200 130) rotate(-62)"/></g>
+</svg>

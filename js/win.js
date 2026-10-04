@@ -23,17 +23,10 @@ function winCheckTowers(gameState) {
   const myKing    = gameState[_winLocalKey]?.towers?.king;
   const enemyKing = gameState[_winEnemyKey]?.towers?.king;
 
-  // 적 킹 타워 파괴 → 내가 승리
-  if (enemyKing && enemyKing.alive === false) {
+  // 킹 타워 파괴 → 경기 확정 (동결된 최종 상태로 승자 판정 — game.js requestMatchEnd)
+  if (enemyKing?.alive === false || myKing?.alive === false) {
     _winChecked = true;
-    writeWinner(_winLocalKey, 'king_destroyed');
-    return;
-  }
-
-  // 내 킹 타워 파괴 → 적이 승리
-  if (myKing && myKing.alive === false) {
-    _winChecked = true;
-    writeWinner(_winEnemyKey, 'king_destroyed');
+    requestMatchEnd();
   }
 }
 
@@ -60,12 +53,31 @@ function winShowResult(winner, reason, localKey, stats) {
   }
 
   if (stats) _populateResultStats(stats);
+  winSetReason(reason === 'disconnect' && !isDraw ? t(isWin ? 'forfeitWinReason' : 'forfeitLoseReason') : '');
 
   document.getElementById('screen-game').classList.add('hidden');
   document.getElementById('screen-game').classList.remove('active');
   const resultScreen = document.getElementById('screen-result');
   resultScreen.classList.remove('hidden');
   resultScreen.classList.add('active');
+
+  // 플레이어는 잠시 뒤 대기실로 자동 복귀 (game.js)
+  if (typeof _startResultReturnCountdown === 'function') _startResultReturnCountdown();
+}
+
+/** 결과 제목 아래 한 줄 (기권승·기권패 이유). 빈 글이면 숨긴다 */
+function winSetReason(text) {
+  let el = document.getElementById('result-reason');
+  const title = document.getElementById('result-title');
+  if (!el && title) {
+    el = document.createElement('div');
+    el.id = 'result-reason';
+    el.className = 'result-reason';
+    title.insertAdjacentElement('afterend', el);
+  }
+  if (!el) return;
+  el.textContent = text || '';
+  el.classList.toggle('hidden', !text);
 }
 
 function _populateResultStats(stats) {

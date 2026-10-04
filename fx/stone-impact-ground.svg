@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  돌(rock) 착지 — 바닥에 눕는 부분. #cast-ground(바닥판) 안에 놓여 타일과 똑같이 눕는다.
+  기준점 = (220, 220) · 전체 길이 0.85초 · 충격 고리 끝 반지름 ≈ 180 (board.js가 판정 반지름에 맞춰 줄인다)
+  예전엔 한 장에 서 있는 부분과 함께 그려 세로를 0.62~0.66배로 손으로 눌러 '누운 척'을 했다.
+  바닥판은 18도만 눕기 때문에 그 납작한 타원이 거의 둥근 조준 원·판정과 어긋나 보였다 → 나눴다.
+  서 있는 부분(섬광·빛줄기·파편)은 stone-impact.svg.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" width="440" height="440">
+  <defs>
+    <radialGradient id="flash">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="22%"  stop-color="#fff3dc" stop-opacity="0.8"/>
+      <stop offset="52%"  stop-color="#ffcf92" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#e0a468" stop-opacity="0"/>
+    </radialGradient>
+    <!-- 가운데가 빈 고리 — 꽉 찬 원이면 흙 얼룩처럼 보인다 -->
+    <radialGradient id="dust">
+      <stop offset="0%"   stop-color="#c8c3b8" stop-opacity="0"/>
+      <stop offset="48%"  stop-color="#c8c3b8" stop-opacity="0.04"/>
+      <stop offset="70%"  stop-color="#d2cdc2" stop-opacity="0.3"/>
+      <stop offset="88%"  stop-color="#b3ada1" stop-opacity="0.34"/>
+      <stop offset="100%" stop-color="#8f8a80" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="shock">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="84%"  stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="92%"  stop-color="#fff0d2" stop-opacity="0.95"/>
+      <stop offset="97%"  stop-color="#ffc98a" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#ffc98a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shardLit" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#c2c7d1"/>
+      <stop offset="55%"  stop-color="#868c9a"/>
+      <stop offset="100%" stop-color="#4c515c"/>
+    </linearGradient>
+    <linearGradient id="spikeGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="45%"  stop-color="#ffe0ae" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#ffc98a" stop-opacity="0"/>
+    </linearGradient>
+
+    <filter id="tear" x="-90%" y="-90%" width="280%" height="280%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.014 0.045" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="16" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="tear2" x="-90%" y="-90%" width="280%" height="280%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.026 0.062" numOctaves="2" seed="29" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="22" xChannelSelector="R" yChannelSelector="G"/>
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+    <!-- 균열은 살짝만 찢는다 — 많이 흔들면 실금이 아니라 낙서가 된다 -->
+    <filter id="tearCrack" x="-60%" y="-60%" width="220%" height="220%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04 0.03" numOctaves="2" seed="17" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="haze" x="-90%" y="-90%" width="280%" height="280%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+    <filter id="glow" x="-90%" y="-90%" width="280%" height="280%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+    <filter id="chip2" x="-80%" y="-80%" width="260%" height="260%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="2" seed="41" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <style>
+      /* viewBox 좌표를 기준으로 돌려야 어긋나지 않는다 */
+      .c { transform-box: view-box; transform-origin: 220px 220px; }
+
+      .flash { animation: flash 0.3s  ease-out both; }
+      .shock { animation: shock 0.42s cubic-bezier(0.08, 0.7, 0.25, 1) both; }
+      .spike { animation: spike 0.34s cubic-bezier(0.1, 0.8, 0.3, 1) both; }
+      .ring  { animation: ring  0.66s cubic-bezier(0.12, 0.75, 0.3, 1) both; animation-delay: 0.04s; }
+      .ring2 { animation: ring2 0.82s cubic-bezier(0.1, 0.7, 0.3, 1) both;   animation-delay: 0.1s;  }
+      .crack { animation: crack 0.85s ease-out both; }
+      .thud  { animation: thud  0.5s  cubic-bezier(0.1, 0.8, 0.25, 1) both; }
+
+      @keyframes flash {
+        0%   { opacity: 0; transform: scale(0.2);  }
+        12%  { opacity: 1; transform: scale(0.95); }
+        100% { opacity: 0; transform: scale(1.45); }
+      }
+      /* 바닥을 때린 충격 고리 — 바닥판이 눕혀 주므로 둥글게 퍼진다 */
+      @keyframes shock {
+        0%   { opacity: 0;   transform: scale(0.1); }
+        14%  { opacity: 1;   }
+        100% { opacity: 0;   transform: scale(1.05); }
+      }
+      /* 사방으로 뻗는 빛 — 처음 0.1초의 한 방이 여기서 나온다 */
+      @keyframes spike {
+        0%   { opacity: 0;   transform: scale(0.1); }
+        14%  { opacity: 0.9; }
+        100% { opacity: 0;   transform: scale(1.15); }
+      }
+      @keyframes ring {
+        0%   { opacity: 0;    transform: scale(0.18); }
+        24%  { opacity: 0.95; }
+        100% { opacity: 0;    transform: scale(1.12); }
+      }
+      @keyframes ring2 {
+        0%   { opacity: 0;   transform: scale(0.32); }
+        32%  { opacity: 0.6; }
+        100% { opacity: 0;   transform: scale(1.5); }
+      }
+      @keyframes crack {
+        0%   { opacity: 0;    transform: scale(0.3); }
+        10%  { opacity: 1;    transform: scale(1);  }
+        68%  { opacity: 0.85; }
+        100% { opacity: 0;    transform: scale(1.04); }
+      }
+      @keyframes thud {
+        0%   { opacity: 0.85; transform: scale(0.18); }
+        20%  { opacity: 0.6;  }
+        100% { opacity: 0;    transform: scale(1.1);  }
+      }
+
+      /* 파편 — 조각마다 날아가는 방향·거리·도는 속도가 다르다 */
+      .sh  { transform-box: view-box; transform-origin: 220px 220px;
+             animation-timing-function: cubic-bezier(0.15, 0.7, 0.35, 1); animation-fill-mode: both; }
+      .sh1 { animation: sh1 0.72s; } .sh2 { animation: sh2 0.66s; }
+      .sh3 { animation: sh3 0.8s;  } .sh4 { animation: sh4 0.7s;  }
+      .sh5 { animation: sh5 0.76s; } .sh6 { animation: sh6 0.62s; }
+      .sh7 { animation: sh7 0.84s; } .sh8 { animation: sh8 0.68s; }
+
+      /* 각 조각: 튀어 올랐다가 떨어진다 (세로 이동의 중간 지점이 정점) */
+      @keyframes sh1 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.5)} 10%{opacity:1}
+                       45%{transform:translate(-72px,-64px) rotate(-120deg) scale(1)}
+                       100%{opacity:0;transform:translate(-132px,10px) rotate(-260deg) scale(0.85)} }
+      @keyframes sh2 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.5)} 10%{opacity:1}
+                       45%{transform:translate(62px,-76px) rotate(140deg) scale(1.05)}
+                       100%{opacity:0;transform:translate(118px,14px) rotate(300deg) scale(0.9)} }
+      @keyframes sh3 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.45)} 12%{opacity:1}
+                       48%{transform:translate(-108px,-30px) rotate(-90deg) scale(0.95)}
+                       100%{opacity:0;transform:translate(-172px,28px) rotate(-210deg) scale(0.8)} }
+      @keyframes sh4 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.55)} 10%{opacity:1}
+                       42%{transform:translate(98px,-38px) rotate(110deg) scale(1)}
+                       100%{opacity:0;transform:translate(160px,22px) rotate(250deg) scale(0.82)} }
+      @keyframes sh5 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.4)} 12%{opacity:1}
+                       46%{transform:translate(-26px,-102px) rotate(-160deg) scale(0.9)}
+                       100%{opacity:0;transform:translate(-48px,-8px) rotate(-320deg) scale(0.7)} }
+      @keyframes sh6 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.5)} 10%{opacity:1}
+                       44%{transform:translate(20px,-92px) rotate(120deg) scale(0.95)}
+                       100%{opacity:0;transform:translate(42px,6px) rotate(240deg) scale(0.75)} }
+      @keyframes sh7 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.35)} 14%{opacity:1}
+                       50%{transform:translate(-80px,-12px) rotate(-70deg) scale(0.8)}
+                       100%{opacity:0;transform:translate(-146px,42px) rotate(-170deg) scale(0.62)} }
+      @keyframes sh8 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.38)} 14%{opacity:1}
+                       50%{transform:translate(72px,-10px) rotate(80deg) scale(0.82)}
+                       100%{opacity:0;transform:translate(140px,44px) rotate(190deg) scale(0.6)} }
+    </style>
+  </defs>
+<!-- ── 땅이 눌린 자국 ───────────────────────────────────── -->
+  <ellipse class="c thud" cx="220" cy="220" rx="108" ry="108" fill="#16181c" opacity="0.85" filter="url(#haze)"/>
+
+  <!-- ── 퍼지는 먼지 (고리) ───────────────────────────────── -->
+  <ellipse class="c ring2" cx="220" cy="220" rx="128" ry="128" fill="url(#dust)" filter="url(#tear2)"/>
+  <ellipse class="c ring"  cx="220" cy="220" rx="118" ry="118" fill="url(#dust)" filter="url(#tear)"/>
+
+  <!-- ── 갈라진 금 — 먼지 위에 올려야 보인다 ──────────────── -->
+  <g class="c crack" filter="url(#tearCrack)">
+    <g stroke="#1b1d22" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.92">
+      <path d="M220,220 L172,206 L128,188 L104,196" stroke-width="7"/>
+      <path d="M220,220 L186,242 L146,266 L132,262" stroke-width="5.5"/>
+      <path d="M220,220 L268,210 L318,200 L338,208" stroke-width="7"/>
+      <path d="M220,220 L262,240 L292,268" stroke-width="5"/>
+      <path d="M220,220 L214,178 L204,142" stroke-width="4.5"/>
+      <path d="M220,220 L230,262 L242,306 L236,326" stroke-width="5.5"/>
+      <path d="M220,220 L246,196 L276,182" stroke-width="3.6"/>
+      <path d="M220,220 L192,196 L166,190" stroke-width="3.2"/>
+    </g>
+    <!-- 곁가지 — 본 금에서 갈라져 나간다 -->
+    <g stroke="#1b1d22" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.72">
+      <path d="M172,206 L156,178" stroke-width="3"/>
+      <path d="M128,188 L118,166 L104,158" stroke-width="2.4"/>
+      <path d="M186,242 L172,272" stroke-width="2.8"/>
+      <path d="M268,210 L286,180" stroke-width="2.8"/>
+      <path d="M318,200 L340,180" stroke-width="2.2"/>
+      <path d="M262,240 L282,254 L306,252" stroke-width="2.4"/>
+      <path d="M214,178 L192,160" stroke-width="2.2"/>
+      <path d="M230,262 L206,282" stroke-width="2.6"/>
+      <path d="M242,306 L266,322" stroke-width="2"/>
+    </g>
+    <!-- 금 안쪽에 비치는 빛 — 가운데 가까이만. 끝까지 칠하면 빛나는 막대처럼 보인다 -->
+    <g stroke="#ffb870" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.45">
+      <path d="M220,220 L172,206" stroke-width="2.2"/>
+      <path d="M220,220 L268,210" stroke-width="2.2"/>
+      <path d="M220,220 L230,262" stroke-width="1.8"/>
+      <path d="M220,220 L186,242" stroke-width="1.6"/>
+      <path d="M220,220 L214,178" stroke-width="1.4"/>
+    </g>
+  </g>
+
+  <!-- ── 바닥을 때린 충격 고리 ────────────────────────────── -->
+  <circle class="c shock" cx="220" cy="220" r="172" fill="url(#shock)" filter="url(#tear)"/>
+
+  </svg>

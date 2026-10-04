@@ -83,3 +83,68 @@ function initServerTime() {
 function serverNow() {
   return Date.now() + _serverTimeOffset;
 }
+
+/* ── 게임 시간 (컷씬 동안 멈춘다) ────────────────────────────
+   그림리퍼 컷씬이 도는 동안은 경기 시간이 흐르지 않는다 — 타이머·에너지·지속 효과·예약 피해·
+   효과 만료가 모두 멈췄다가 컷씬이 끝나면 이어진다.
+   멈춤은 gameState/pauses/{id} = { at: 서버 시각, dur: ms } 로 두 화면이 같이 받는다.
+   게임 시간 = 서버 시각 − (그때까지 멈춰 있던 시간의 합, 겹친 구간은 한 번만).
+   경기 중에 '언제까지'를 재는 값(효과 만료·예약 적용 시각·오버타임 시작)은 전부 게임 시간으로 쓴다. */
+let _gamePauses = [];   // [[시작, 끝]] 서버 시각, 시작순, 겹침 합침
+
+function gamePauseSet(pauses) {
+  const list = Object.values(pauses || {})
+    .filter(p => p && typeof p.at === 'number' && typeof p.dur === 'number' && p.dur > 0)
+    .map(p => [p.at, p.at + p.dur])
+    .sort((a, b) => a[0] - b[0]);
+  const merged = [];
+  list.forEach(([a, b]) => {
+    const last = merged[merged.length - 1];
+    if (last && a <= last[1]) last[1] = Math.max(last[1], b);
+    else merged.push([a, b]);
+  });
+  _gamePauses = merged;
+}
+
+/** 서버 시각 t → 그 순간의 게임 시간 */
+function gameTimeOf(t) {
+  let paused = 0;
+  for (const [a, b] of _gamePauses) {
+    if (t <= a) break;
+    paused += Math.min(t, b) - a;
+  }
+  return t - paused;
+}
+
+function gameNow() { return gameTimeOf(serverNow()); }
+
+/** 지금 멈춰 있는가 (컷씬 중) */
+function gamePaused() { return gamePauseLeft() > 0; }
+
+/** 멈춤이 끝나기까지 남은 ms (멈춰 있지 않으면 0) */
+function gamePauseLeft() {
+  const t = serverNow();
+  for (const [a, b] of _gamePauses) if (t >= a && t < b) return b - t;
+  return 0;
+}
+
+/**
+ * ms 안에 끝나지 않으면 실패로 — 연결이 끊긴 동안 Firebase 쓰기·읽기는 실패하지 않고
+ * 연결될 때까지 기다리므로, 버튼·로딩이 끝없이 멈춰 있지 않도록 감싼다.
+ */
+const NETWORK_TIMEOUT_MS = 10000;
+function withTimeout(promise, ms = NETWORK_TIMEOUT_MS) {
+  let timer;
+  const limit = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(Object.assign(new Error('응답 없음'), { timeout: true })), ms);
+  });
+  return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * game.html 정상 입장 표시 — game.html은 이 표시가 자기 주소와 같을 때만 방에 들어간다.
+ * 새로고침·뒤로가기·주소 직접 입력으로 들어오면 표시가 없으므로 방을 정리하고 닉네임 화면으로 간다.
+ */
+function markGameEntry(url) {
+  sessionStorage.setItem('_enter', new URL(url, location.href).href);
+}

@@ -1,29 +1,50 @@
 /* ============================================================
-   cards.css — 카드 컴포넌트, 등급 색상, 슬롯
+   cards.css — 카드 컴포넌트 (입체형), 등급 색상, 진화 게이지
+
+   입체감 구성:
+     · 본체        세로 그라데이션 + 좌상단 광택
+     · 베벨        inset 상단 하이라이트 / 하단 그림자
+     · 두께        아래로 깔린 단색 슬래브 (0 6px 0 -1px)
+     · 그림자      바닥 드롭 섀도
+     · 아트 창     안으로 파인 inset 패널에 아이콘
+     · 에너지 젬   좌상단에 튀어나온 구슬
+   등급 색은 --grade 하나로 테두리·젬·네임플레이트에 전파된다.
 ============================================================ */
 
-/* ── 카드 공통 ──────────────────────────────────────────── */
+/* ── 카드 공통 (덱 슬롯 기준 118×160) ───────────────────── */
 .card {
-  width: 72px;
-  height: 96px;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  background: var(--bg-card);
+  --grade:      var(--grade-common);
+  --grade-glow: transparent;
+
+  width: 118px;
+  height: 160px;
+  border-radius: 12px;
+  border: none;
+  padding: 0;
+  background:
+    linear-gradient(155deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 38%),
+    linear-gradient(180deg, #2c3a5e 0%, #18203a 55%, #0e1324 100%);
+  box-shadow:
+    0 0 0 2px var(--grade),                  /* 등급 프레임 */
+    0 0 0 4px rgba(0, 0, 0, 0.6),            /* 바깥 테두리 */
+    inset 0 1px 0 rgba(255, 255, 255, 0.35), /* 상단 베벨 */
+    inset 0 -3px 0 rgba(0, 0, 0, 0.45),      /* 하단 베벨 */
+    0 7px 0 -1px #070a14,                    /* 카드 두께 */
+    0 12px 20px rgba(0, 0, 0, 0.6),          /* 바닥 그림자 */
+    0 0 18px var(--grade-glow);              /* 등급 발광 */
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 6px 4px 4px;
   cursor: grab;
   user-select: none;
   position: relative;
-  transition: transform var(--transition), box-shadow var(--transition);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
   flex-shrink: 0;
 }
 
+/* 호버 — 살짝 들리며 앞으로 기울어짐 */
 .card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  transform: perspective(700px) rotateX(9deg) translateY(-12px) scale(1.04);
   z-index: 1000;
   position: relative;
 }
@@ -35,252 +56,298 @@
   transform: scale(0.95);
 }
 
-/* ── 등급별 테두리 & 글로우 ────────────────────────────── */
-.card.grade-common {
-  border-color: var(--grade-common);
-}
-.card.grade-common .card-grade-dot { background: var(--grade-common); }
-
-.card.grade-rare {
-  border-color: var(--grade-rare);
-  box-shadow: 0 0 6px rgba(76,175,80,0.4);
-}
-.card.grade-rare .card-grade-dot { background: var(--grade-rare); }
-
-.card.grade-epic {
-  border-color: var(--grade-epic);
-  box-shadow: 0 0 8px rgba(156,39,176,0.5);
-}
-.card.grade-epic .card-grade-dot { background: var(--grade-epic); }
-
-.card.grade-mythic {
-  border-color: var(--grade-mythic);
-  box-shadow: 0 0 10px rgba(229,57,53,0.6);
-}
-.card.grade-mythic .card-grade-dot { background: var(--grade-mythic); }
-
+/* ── 등급별 색 ─────────────────────────────────────────── */
+.card.grade-common    { --grade: #b9bec7; }
+.card.grade-rare      { --grade: var(--grade-rare);      --grade-glow: rgba(76, 175, 80, 0.45); }
+.card.grade-epic      { --grade: #b04bd0;                --grade-glow: rgba(156, 39, 176, 0.55); }
+.card.grade-mythic    { --grade: var(--grade-mythic);    --grade-glow: rgba(229, 57, 53, 0.6); }
 .card.grade-legendary {
-  border-color: var(--grade-legendary);
-  box-shadow: 0 0 14px rgba(255,215,0,0.7);
+  --grade: var(--grade-legendary);
+  --grade-glow: rgba(255, 215, 0, 0.7);
   animation: legendary-glow 2s infinite alternate;
 }
-.card.grade-legendary .card-grade-dot { background: var(--grade-legendary); }
-
-@keyframes legendary-glow {
-  from { box-shadow: 0 0 10px rgba(255,215,0,0.5); }
-  to   { box-shadow: 0 0 22px rgba(255,215,0,0.9); }
-}
-
 .card.grade-secret {
-  border-color: #111;
-  box-shadow:
-    0 0 0 1px #222,
-    0 0 14px 5px rgba(0,0,0,1),
-    0 0 28px 10px rgba(0,0,0,0.9),
-    inset 0 0 10px rgba(0,0,0,0.75);
+  --grade: #3a3a3a;
+  background:
+    linear-gradient(155deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 38%),
+    linear-gradient(180deg, #1a1a1f 0%, #0c0c10 60%, #000 100%);
   animation: secret-dark-aura 2s infinite alternate;
 }
-.card.grade-secret .card-grade-dot { background: #444; }
 
-@keyframes secret-dark-aura {
-  from {
-    box-shadow:
-      0 0 0 1px #1c1c1c,
-      0 0 10px 3px rgba(0,0,0,0.95),
-      0 0 20px 7px rgba(0,0,0,0.8),
-      inset 0 0 7px rgba(0,0,0,0.6);
-    border-color: #1a1a1a;
-  }
-  to {
-    box-shadow:
-      0 0 0 2px #0a0a0a,
-      0 0 20px 8px rgba(0,0,0,1),
-      0 0 42px 16px rgba(0,0,0,0.95),
-      inset 0 0 16px rgba(0,0,0,1);
-    border-color: #000;
-  }
+/* 발광 애니메이션은 box-shadow 대신 filter로 — 입체 섀도 스택을 보존 */
+@keyframes legendary-glow {
+  from { filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.45)); }
+  to   { filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.95)); }
 }
 
-/* ── 카드 내부 구조 ─────────────────────────────────────── */
-.card-icon {
-  font-size: 24px;
-  line-height: 1;
-  flex: 1;
+@keyframes secret-dark-aura {
+  from { filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.9)); }
+  to   { filter: drop-shadow(0 0 22px rgba(0, 0, 0, 1)) drop-shadow(0 0 6px rgba(120, 0, 160, 0.5)); }
+}
+
+/* ── 비용 · 등급 배지 (좌상단 · 우상단 꼭짓점) ─────────────
+   둥근 은빛 테두리에 등급 색 고리, 검은 속. 등급 배지는 가운데 사각별, 비용 배지는 그 자리에 숫자.
+   별 · 숫자 · 고리 색은 --badge (등급 색) 하나로 정해진다. 크기는 --badge-size 하나를 둘이 같이 쓴다. */
+.card {
+  --badge: #eef1f6;
+  --badge-size: 28px;
+}
+.card.grade-common    { --badge: #eef1f6; }
+.card.grade-rare      { --badge: #46d866; }
+.card.grade-epic      { --badge: #b86bff; }
+.card.grade-mythic    { --badge: #ff3b3b; }
+.card.grade-legendary { --badge: #ffd23a; }
+.card.grade-secret    { --badge: #34343a; }
+
+.card-energy-cost,
+.card-grade-dot {
+  position: absolute;
+  top: calc(var(--badge-size) * -0.18);
+  width: var(--badge-size);
+  height: var(--badge-size);
+  box-sizing: border-box;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: radial-gradient(circle at 50% 42%, #2a2d38 0%, #0d0e14 62%, #050507 100%);
+  border: calc(var(--badge-size) * 0.08) solid #c9ccd6;       /* 은빛 테두리 */
+  box-shadow:
+    inset 0 0 0 calc(var(--badge-size) * 0.05) var(--badge), /* 안쪽 등급 색 고리 */
+    inset 0 0 calc(var(--badge-size) * 0.25) color-mix(in srgb, var(--badge) 35%, transparent),
+    0 0 0 1px #07080c,
+    0 2px 5px rgba(0, 0, 0, 0.7),
+    0 0 calc(var(--badge-size) * 0.3) color-mix(in srgb, var(--badge) 45%, transparent);
+  z-index: 3;
+}
+.card-energy-cost { left: calc(var(--badge-size) * -0.16); }
+.card-grade-dot   { right: calc(var(--badge-size) * -0.16); }
+
+/* 아래쪽 작은 뿔 — 참고 이미지의 테두리 끝 */
+.card-energy-cost::after,
+.card-grade-dot::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--badge-size) * -0.2);
+  width: calc(var(--badge-size) * 0.2);
+  height: calc(var(--badge-size) * 0.2);
+  transform: translateX(-50%) rotate(45deg);
+  background: #c9ccd6;
+  box-shadow: 0 0 0 1px #07080c;
+  z-index: -1;
 }
 
+/* 비용 숫자 */
+.card-energy-cost {
+  font-size: calc(var(--badge-size) * 0.52);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--badge);
+  text-shadow:
+    0 0 1px #000,
+    0 0 calc(var(--badge-size) * 0.2) color-mix(in srgb, var(--badge) 70%, transparent);
+}
+
+/* 등급 사각별 */
+.card-grade-dot::before {
+  content: '';
+  width: 64%;
+  height: 64%;
+  background: radial-gradient(circle, #fff 0%, var(--badge) 45%);
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  filter: drop-shadow(0 0 2px var(--badge));
+}
+
+/* 시크릿 — 검정에 가까운 회색은 검은 속에 묻히니 은빛 테를 둘러 보이게 한다 */
+.card.grade-secret .card-energy-cost {
+  text-shadow: 0 0 1px #c9ccd6, 0 0 2px #c9ccd6;
+}
+.card.grade-secret .card-grade-dot::before {
+  background: radial-gradient(circle, #5a5a62 0%, var(--badge) 55%);
+  filter: drop-shadow(0 0 1px #c9ccd6) drop-shadow(0 0 1px #c9ccd6);
+}
+
+/* ── 아트 창 (안으로 파인 패널) ─────────────────────────── */
+.card-icon {
+  flex: 1 1 auto;
+  align-self: stretch;
+  margin: 26px 10px 0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 50px;
+  line-height: 1;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 60%),
+    rgba(0, 0, 0, 0.32);
+  box-shadow:
+    inset 0 3px 7px rgba(0, 0, 0, 0.7),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    0 0 0 1px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 4px 5px rgba(0, 0, 0, 0.55);
+}
+
+/* ── 네임 플레이트 ──────────────────────────────────────── */
 .card-name {
-  font-size: 10px;
-  font-weight: 700;
+  align-self: stretch;
+  margin: 8px 6px 0;
+  padding: 4px 4px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 800;
   text-align: center;
-  color: var(--text-primary);
+  color: #f2f5fa;
   line-height: 1.2;
-  max-width: 100%;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.5) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 2px solid var(--grade);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* 젬 두 개가 절대 배치로 빠졌으므로 푸터는 하단 여백만 담당 */
 .card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  margin-top: 2px;
-}
-
-.card-energy-cost {
-  font-size: 10px;
-  font-weight: 800;
-  color: var(--energy-color);
-}
-
-.card-grade-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
+  height: 8px;
+  flex: 0 0 auto;
 }
 
 /* ── 사용 불가 상태 ─────────────────────────────────────── */
 .card.cannot-afford {
-  opacity: 0.4;
   cursor: not-allowed;
-  filter: grayscale(60%);
+  filter: grayscale(75%) brightness(0.6);
+  animation: none;
 }
 
 .card.cannot-afford:hover {
   transform: none;
-  box-shadow: none;
 }
 
-/* ── 제공 카드 래퍼 (클릭해서 덱에 추가) ────────────────── */
-.offer-card-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.offer-add-btn {
-  font-size: 10px;
-  padding: 2px 8px;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 4px;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: background var(--transition);
-}
-
-.offer-add-btn:hover { background: rgba(255,255,255,0.2); }
-
-.offer-add-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/* ── 덱이 꽉 찼을 때 오버레이 ───────────────────────────── */
-.deck-full-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  color: #ff9800;
-  font-weight: 700;
-  text-align: center;
-  padding: 2px;
-}
-
-/* ── 카드 툴팁 ──────────────────────────────────────────── */
+/* ── 카드 툴팁 — 고정 폭(줄바꿈 위치가 항상 동일) ───────── */
 .card-tooltip {
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 14px);
   left: 50%;
   transform: translateX(-50%);
-  background: #1a1a2e;
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 8px;
-  padding: 8px 10px;
-  min-width: 140px;
-  font-size: 11px;
+  width: 260px;
+  background: rgba(14, 18, 34, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--text-primary);
   pointer-events: none;
   z-index: 999;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.8);
-  white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8);
+  white-space: normal;
+  word-break: keep-all;
   display: none;
 }
 
-.card:hover .card-tooltip {
-  display: block;
+.card:hover .card-tooltip { display: block; }
+
+/* 오른쪽 끝의 제공 카드는 툴팁을 왼쪽으로 펼쳐 스테이지 밖으로 잘리지 않게 */
+.offer-cards .card-tooltip {
+  left: auto;
+  right: 0;
+  transform: none;
 }
 
 .tooltip-name {
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
   margin-bottom: 4px;
 }
 
 .tooltip-row {
   color: var(--text-secondary);
-  line-height: 1.6;
 }
 
 .tooltip-row span {
   color: var(--text-primary);
 }
 
-/* ── 진화 게이지 ─────────────────────────────────────── */
+/* ── 진화 게이지 (덱 카드 하단) ─────────────────────────── */
 .evolution-gauge {
   display: flex;
-  gap: 2px;
-  width: 100%;
-  padding: 0 3px;
-  margin-top: 1px;
+  gap: 3px;
+  align-self: stretch;
+  padding: 0 10px;
+  margin-top: 5px;
   flex-shrink: 0;
 }
 
 .gauge-cell {
   flex: 1;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255,255,255,0.12);
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.5);
 }
 
-.gauge-cell.filled.red    { background: linear-gradient(90deg, #ff2020, #ff6060); }
-.gauge-cell.filled.orange { background: linear-gradient(90deg, #ff8000, #ffb040); }
 .gauge-cell.filled.yellow { background: linear-gradient(90deg, #ffd700, #ffee60); }
 .gauge-cell.filled.green  { background: linear-gradient(90deg, #00cc44, #44ee80); }
 .gauge-cell.filled.full   { background: linear-gradient(90deg, #8800ff, #cc44ff); }
 
-/* 진화 완료 카드 테두리 강조 */
+/* 게이지가 있으면 푸터 여백 대신 게이지 아래 여백을 사용 */
+.card .evolution-gauge { margin-bottom: 7px; }
+.card:has(.evolution-gauge) .card-footer { height: 0; }
+
+/* 진화 완료 카드 */
 .card.card-evolved {
-  box-shadow: 0 0 12px rgba(180,0,255,0.7);
+  --grade-glow: rgba(190, 60, 255, 0.75);
   animation: evolved-glow 1.5s infinite alternate;
 }
 
 @keyframes evolved-glow {
-  from { box-shadow: 0 0 8px rgba(180,0,255,0.5); }
-  to   { box-shadow: 0 0 20px rgba(220,80,255,0.95); }
+  from { filter: drop-shadow(0 0 5px rgba(180, 0, 255, 0.5)); }
+  to   { filter: drop-shadow(0 0 14px rgba(220, 80, 255, 0.95)); }
 }
 
-/* ── 복합 이모지 (바위 지옥: 🪨 위에 😈) ──────────── */
-.evo-compound-icon {
-  position: relative;
-  display: inline-block;
-  line-height: 1;
-}
+/* ════════════════════════════════════════════════════════════
+   크기 변형 — 제공 카드 / 관전자 덱
+════════════════════════════════════════════════════════════ */
 
-.devil-chip {
-  position: absolute;
-  font-size: 0.45em;
-  top: -3px;
-  right: -6px;
-  line-height: 1;
+/* 제공 카드 104×142 */
+.offer-cards .card {
+  width: 104px;
+  height: 142px;
+  border-radius: 11px;
+}
+.offer-cards .card .card-icon       { font-size: 44px; margin: 24px 9px 0; }
+.offer-cards .card .card-name       { font-size: 12px; }
+.offer-cards .card { --badge-size: 26px; }
+
+/* 관전자 덱 64×88 */
+.spec-deck-slots .card {
+  width: 64px;
+  height: 88px;
+  border-radius: 8px;
+  cursor: default !important;
+  pointer-events: none;
+}
+.spec-deck-slots .card .card-icon       { font-size: 24px; margin: 14px 5px 0; border-radius: 5px; }
+.spec-deck-slots .card .card-name       { font-size: 9px; margin: 4px 3px 0; padding: 2px; }
+.spec-deck-slots .card .card-footer     { height: 4px; }
+.spec-deck-slots .card { --badge-size: 17px; }
+
+/* ════════════════════════════════════════════════════════════
+   카드 면 그림 (그림리퍼 등 — cards.js art · cardApplyArt)
+   그림이 카드 면 전체를 채운다. 아이콘 칸은 자리만 차지하게 두어 이름판 · 차징 게이지 배치는 그대로고,
+   비용 · 등급 배지와 이름판은 다른 카드처럼 그림 위에 얹힌다.
+════════════════════════════════════════════════════════════ */
+.card.card-art {
+  background: var(--card-art) center / 100% 100% no-repeat, #0b0a14;
+  overflow: visible;
+}
+.card.card-art .card-icon {
+  visibility: hidden;
+}
+.card.card-art .card-name {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.8) 100%);
 }

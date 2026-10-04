@@ -3,18 +3,54 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CardBattles</title>
+  <title>Cardecx</title>
+  <!-- 웹폰트 먼저: Material Symbols의 기본 font-size(24px)를 프로젝트 CSS가 덮어쓰도록 -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=menu,playing_cards,smart_toy" />
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/lobby.css" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=campaign,chat,playing_cards,question_mark,settings,speaker_notes_off" />
 </head>
 <body>
 
+<!-- ───────────── 로딩 화면 (첫 화면 · 화면 전환) ───────────── -->
+<div id="screen-loading" class="screen active">
+  <!-- 480×480 고정 캔버스 — 통째로 scale 하므로 확대/축소해도 깨지지 않는다 (loading.js) -->
+  <div class="loading-stage">
+    <h1 class="loading-title"><span class="material-symbols-outlined loading-logo-icon">playing_cards</span>Cardecx</h1>
+    <div id="loading-ring" class="loading-ring" style="--p: 0">
+      <div class="loading-ring-track"></div>
+      <div class="loading-ring-spin"></div>
+      <div class="loading-ring-core">
+        <span id="loading-pct" class="loading-pct-text">0%</span>
+      </div>
+    </div>
+    <p id="loading-message" class="loading-message hidden"></p>
+  </div>
+</div>
+<script>
+  // 첫 그림부터 제자리·제 진행률로 — 스크립트가 다 받아지기 전에 크기 맞춤과
+  // 앞 페이지에서 넘겨받은 진행률·문구를 바로 적용한다 (0%로 튀거나 크기가 바뀌지 않도록)
+  (function () {
+    var stage = document.querySelector('.loading-stage');
+    var s = Math.min(Math.min(window.innerWidth, window.innerHeight) / 480 * 0.92, 1.6);
+    if (stage) stage.style.transform = 'translate(-50%, -50%) scale(' + s.toFixed(3) + ')';
+    try {
+      var h = JSON.parse(sessionStorage.getItem('_loader') || 'null');
+      if (h) {
+        document.getElementById('loading-ring').style.setProperty('--p', h.from);
+        document.getElementById('loading-pct').textContent = h.from + '%';
+        var m = document.getElementById('loading-message');
+        if (h.message) { m.textContent = h.message; m.classList.remove('hidden'); }
+      }
+    } catch (e) {}
+    if (stage) stage.classList.add('ready');
+  })();
+</script>
+
 <!-- ───────────── 닉네임 입력 화면 ───────────── -->
-<div id="screen-nickname" class="screen active">
-  <div class="lobby-card">
+<div id="screen-nickname" class="screen hidden">
+  <div class="panel-surface nickname-panel">
     <h1 class="logo"><span class="material-symbols-outlined logo-icon">playing_cards</span> Cardecx</h1>
-    <p class="subtitle" data-i18n="subtitle">Enter your nickname and start the game</p>
+    <p class="subtitle" data-i18n="subtitle">닉네임을 입력하고 게임을 시작하세요</p>
 
     <div class="input-group">
       <input
@@ -27,143 +63,120 @@
       <p id="nickname-error" class="error-msg hidden"></p>
     </div>
 
-    <button id="btn-confirm-nickname" class="btn btn-confirm" data-i18n="confirmBtn">Confirm</button>
+    <button id="btn-confirm-nickname" class="btn btn-confirm" data-i18n="confirmBtn">확인</button>
 
-    <div class="icon-btn-row">
-      <button id="btn-codex" class="btn-settings" title="카드 도감">
-        <span class="material-symbols-outlined">playing_cards</span>
-      </button>
-      <button id="btn-campaign" class="btn-settings" title="업데이트 로그">
-        <span class="material-symbols-outlined">campaign</span>
-      </button>
-      <button id="btn-tips" class="btn-settings" title="게임 팁">
-        <span class="material-symbols-outlined">question_mark</span>
-      </button>
-      <button id="btn-settings" class="btn-settings" title="Settings">
-        <span class="material-symbols-outlined">settings</span>
-      </button>
-    </div>
+    <!-- 밸런스 패치 노트 — 누르면 창이 뜬다 (js/patchnotes.js) -->
+    <button id="btn-patch-notes" class="btn-patch-notes" type="button">
+      <span class="pn-tag">PATCH NOTES</span><span>밸런스 패치 노트</span><span class="pn-open">›</span>
+    </button>
+    <!-- 카드 확률 안내 — 누르면 창이 뜬다 (js/patchnotes.js) -->
+    <button id="btn-card-rates" class="btn-patch-notes btn-card-rates" type="button">
+      <span class="pn-tag">CARD RATES</span><span>카드 확률 안내</span><span class="pn-open">›</span>
+    </button>
+
   </div>
 </div>
 
-<!-- ───────────── 방 선택 화면 ───────────── -->
+<!-- ───────────── 메인 화면 (방 선택) ───────────── -->
 <div id="screen-room" class="screen hidden">
-  <div class="lobby-card">
-    <div class="room-header">
+
+  <!-- 좌측 사이드바: 방 목록 (햄버거 버튼으로 토글) -->
+  <aside id="room-sidebar" class="panel-surface room-sidebar hidden">
+    <div class="sidebar-head">
+      <span class="sidebar-title" data-i18n="roomListTitle">방 목록</span>
+      <button id="btn-sidebar-close" class="sidebar-close" title="닫기">&times;</button>
+    </div>
+    <div id="room-list" class="room-list">
+      <p class="room-list-empty" data-i18n="noRooms">생성된 방이 없습니다.</p>
+    </div>
+  </aside>
+
+  <!-- 중앙 1:1 패널 -->
+  <div class="panel-surface main-panel">
+
+    <!-- 상단: 좌 온라인 수 / 우 닉네임 -->
+    <div class="panel-row panel-row-top">
       <span class="online-count-badge">
         <span class="online-dot"></span>
-        <span id="online-player-count">—</span>
+        <span id="online-player-count">&mdash;</span>
       </span>
-      <span class="player-badge">👤 <span id="display-nickname"></span></span>
+      <span id="display-nickname" class="panel-nickname"></span>
     </div>
 
-    <h2 data-i18n="roomTitle">Room Select</h2>
+    <!-- 중앙: 코드로 참가하기 -->
+    <div class="panel-center">
+      <h2 class="panel-heading" data-i18n="joinByCodeTitle">코드로 참가하기</h2>
 
-    <button id="btn-create-room" class="btn btn-primary" data-i18n="createRoom">Create Room</button>
-
-    <div class="divider" data-i18n="orJoinByCode">or join by room code</div>
-
-    <div class="input-group">
-      <input
-        id="input-room-code"
-        type="text"
-        data-i18n-placeholder="roomCodePlaceholder"
-        placeholder="Room code (6 chars, e.g. AB3X7Q)"
-        maxlength="6"
-        autocomplete="off"
-        style="text-transform:uppercase"
-      />
-      <p id="room-error" class="error-msg hidden"></p>
-    </div>
-    <button id="btn-join-room" class="btn btn-secondary" data-i18n="joinRoom">Join Room</button>
-
-    <div class="divider" data-i18n="orRoomList">or join from room list</div>
-
-    <div id="room-list" class="room-list">
-      <p class="room-list-empty" data-i18n="noRooms">No rooms available.</p>
-    </div>
-  </div>
-</div>
-
-<!-- ───────────── 카드 도감 모달 ───────────── -->
-<div id="codex-modal" class="settings-modal hidden">
-  <div class="settings-overlay" id="codex-overlay"></div>
-  <div class="settings-panel codex-panel">
-    <h3>📖 카드 도감</h3>
-    <div id="codex-content" class="codex-content"></div>
-    <button id="btn-codex-close" class="btn btn-secondary" data-i18n="close">닫기</button>
-  </div>
-</div>
-
-<!-- ───────────── 업데이트 로그 모달 ───────────── -->
-<div id="campaign-modal" class="settings-modal hidden">
-  <div class="settings-overlay" id="campaign-overlay"></div>
-  <div class="settings-panel info-panel">
-    <h3>📢 업데이트 로그</h3>
-    <div class="info-content">
-      <div class="info-entry">
-        <span class="info-version">v1.0</span>
-        <p>Cardecx 출시! 2인 전략 카드 배틀 게임을 즐겨보세요.</p>
+      <div class="input-group">
+        <input
+          id="input-room-code"
+          type="text"
+          data-i18n-placeholder="roomCodeInputPlaceholder"
+          placeholder="코드 입력"
+          maxlength="6"
+          autocomplete="off"
+          style="text-transform:uppercase"
+        />
+        <p id="room-error" class="error-msg hidden"></p>
       </div>
-    </div>
-    <button id="btn-campaign-close" class="btn btn-secondary" data-i18n="close">Close</button>
-  </div>
-</div>
 
-<!-- ───────────── 게임 팁 모달 ───────────── -->
-<div id="tips-modal" class="settings-modal hidden">
-  <div class="settings-overlay" id="tips-overlay"></div>
-  <div class="settings-panel info-panel">
-    <h3>❓ 게임 팁</h3>
-    <div class="info-content">
-      <ul class="tips-list">
-        <li>카드를 사용하면 에너지가 소모됩니다. 에너지 관리가 핵심!</li>
-        <li>희귀도가 높은 카드일수록 강력한 효과를 가집니다.</li>
-        <li>상대 타워를 먼저 파괴하면 승리합니다.</li>
-        <li>턴마다 에너지가 회복되니 타이밍을 잘 조절하세요.</li>
-        <li>방 코드를 친구에게 공유해서 대결하세요.</li>
-      </ul>
+      <button id="btn-join-room" class="btn btn-confirm" data-i18n="confirmBtn">확인</button>
     </div>
-    <button id="btn-tips-close" class="btn btn-secondary" data-i18n="close">Close</button>
-  </div>
-</div>
 
-<!-- ───────────── 설정 모달 ───────────── -->
-<div id="settings-modal" class="settings-modal hidden">
-  <div class="settings-overlay" id="settings-overlay"></div>
-  <div class="settings-panel">
-    <h3 data-i18n="settingsTitle">Settings</h3>
-    <div class="settings-row">
-      <span data-i18n="language">Language</span>
-      <select id="lang-select" class="lang-select">
-        <option value="en">English</option>
-        <option value="ko">한국어</option>
-        <option value="ja">日本語</option>
-        <option value="zh">中文</option>
-      </select>
-    </div>
-    <div class="settings-row">
-      <span>인게임 채팅</span>
-      <button id="btn-chat-toggle" class="chat-toggle-btn" data-state="on">
-        <span class="material-symbols-outlined toggle-state-icon">chat</span>
-        <span class="toggle-state-text">ON</span>
+    <!-- 하단: 좌 방 만들기(+) / 우 방 목록(햄버거) -->
+    <div class="panel-row panel-row-bottom">
+      <button id="btn-create-room" class="corner-btn" title="방 만들기">
+        <span class="corner-plus">+</span>
+      </button>
+      <button id="btn-vs-ai" class="corner-btn corner-btn-wide" title="AI와 대전">
+        <span class="material-symbols-outlined">smart_toy</span>
+        <span class="corner-btn-label" data-i18n="vsAi">AI와 대전</span>
+      </button>
+      <button id="btn-room-menu" class="corner-btn" title="방 목록">
+        <span class="material-symbols-outlined">menu</span>
       </button>
     </div>
-    <button id="btn-settings-close" class="btn btn-secondary" data-i18n="close">Close</button>
+
   </div>
 </div>
 
 <!-- Firebase SDK (compat) -->
+<!-- 스크립트 일부가 받아지지 않으면(네트워크 끊김 등) 반쯤 로드된 화면에 멈추지 않도록 로비로 -->
+<script>
+  window.__bootFailed = false;
+  window.addEventListener('error', function (e) {
+    // 게임 자체 파일(이 사이트 · Firebase SDK)만 본다 — 로그인 SDK가 스스로 추가로 불러오는
+    // 구글 스크립트(apis.google.com)는 광고 차단기 등에 막혀도 게임과 무관하다
+    var t = e.target;
+    if (!t || t.tagName !== 'SCRIPT' || !t.src) return;
+    if (t.src.indexOf(location.origin + '/') === 0 || t.src.indexOf('https://www.gstatic.com/firebasejs/') === 0) {
+      window.__bootFailed = true;
+    }
+  }, true);
+  window.addEventListener('load', function () {
+    if (!window.__bootFailed) return;
+    alert('게임을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 페이지를 다시 열어주세요.');
+  });
+</script>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <!-- App scripts -->
 <script src="firebase-config.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/cards.js"></script>
-<script src="js/codex.js"></script>
+<script src="js/patchnotes.js"></script>
+<script src="js/dev.js"></script>
+<script src="js/loading.js"></script>
+<!-- 접속 중 생존 신호 — 온라인 수에서 유령을 빼는 기준 -->
+<script src="js/online.js"></script>
 <script src="js/lobby.js"></script>
+<!-- 연결이 끈기면 안내를 띄운다 -->
+<script src="js/netstate.js"></script>
 
 </body>
 </html>

@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  흰꽃(cherry_blossom_evo) — cards.js의 cast: 'whiteblossom'
+  기준점(타워 중심) = (400, 400) · 반지름 344 (타워 3개가 들어가는 원) · 전체 길이 5.4초
+  숲의정령과 같은 토템 형태. 가운데 흰 꽃을 기준으로 흰 꽃잎이 원을 따라 흩날린다.
+  ※ 이 파일은 fx/whiteblossom.gen.py가 만들어 낸다 — 손으로 고치지 말고 그 스크립트를 고쳐 다시 실행할 것
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <defs>
+    <radialGradient id="wGround">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.34"/>
+      <stop offset="45%"  stop-color="#f4f7ff" stop-opacity="0.22"/>
+      <stop offset="82%"  stop-color="#dfe8ff" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#dfe8ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wPetal" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%"   stop-color="#e8eefc"/>
+      <stop offset="45%"  stop-color="#fdfdff"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    </linearGradient>
+    <filter id="wSoft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="0.8"/>
+    </filter>
+    <filter id="wHalo" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="3" result="g"/>
+      <feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- 흰 꽃잎 한 장 (밑동이 0,0, 끝이 위쪽 · 끝이 살짝 팬 벚꽃잎) -->
+    <g id="wleaf" filter="url(#wSoft)">
+      <path d="M 0 0 C 7 -5 12.5 -13 10.5 -22 C 9.5 -27 7 -29.5 4.5 -28 C 3 -27 1.5 -26 0 -24 Z" fill="url(#wPetal)"/>
+      <path d="M 0 0 C 7 -5 12.5 -13 10.5 -22 C 9.5 -27 7 -29.5 4.5 -28 C 3 -27 1.5 -26 0 -24 Z" fill="url(#wPetal)" transform="scale(-1,1)"/>
+    </g>
+  </defs>
+
+  <style>
+    .all, .ground, .ring, .orbit, .core { transform-box: view-box; transform-origin: 400px 400px; }
+
+    /* 끝날 때 통째로 스르륵 사라진다 */
+    .all { animation: fade 5.4s linear both; }
+    @keyframes fade {
+      0%, 87% { opacity: 1; }
+      100%    { opacity: 0; }
+    }
+
+    /* 흰 빛 바닥이 깔린다 */
+    .ground { animation: ground 0.55s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+    @keyframes ground {
+      0%   { transform: scale(0.15); opacity: 0; }
+      70%  { transform: scale(1.04); opacity: 1; }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+
+    /* 토템 고리 — 두 겹이 반대로 천천히 돈다 */
+    .ring-out { animation: ringin 0.6s ease-out 0.1s both, spin 24s linear 0.1s infinite; }
+    .ring-in  { animation: ringin 0.6s ease-out 0.2s both, spinb 17s linear 0.2s infinite; }
+    @keyframes ringin { 0% { opacity: 0; } 100% { opacity: 1; } }
+
+    @keyframes spin  { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes spinb { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+
+    /* 꽃잎 궤도 — 겹마다 속도가 달라 흩날리는 것처럼 보인다 */
+    @keyframes pop-orbit { 0% { opacity: 0; } 100% { opacity: 1; } }
+    .o0 { animation: pop-orbit 0.6s ease-out 0.10s both, spin 28s linear infinite; }
+    .o1 { animation: pop-orbit 0.6s ease-out 0.18s both, spinb 38s linear infinite; }
+    .o2 { animation: pop-orbit 0.6s ease-out 0.26s both, spin 21s linear infinite; }
+
+    /* 꽃잎 한 장 — 피어난 뒤 제자리에서 살랑인다 */
+    .petal {
+      transform-box: fill-box;
+      transform-origin: 50% 100%;
+      animation-name: bloom, flutter;
+      animation-duration: 0.5s, 3.4s;
+      animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1), ease-in-out;
+      animation-fill-mode: both, both;
+      animation-iteration-count: 1, infinite;
+    }
+    @keyframes bloom {
+      0%   { transform: scale(0.1)  rotate(-14deg); opacity: 0; }
+      65%  { transform: scale(1.12) rotate(4deg);   opacity: 1; }
+      100% { transform: scale(1)    rotate(0deg);   opacity: 1; }
+    }
+    @keyframes flutter {
+      0%, 100% { transform: rotate(-7deg) scale(1); }
+      50%      { transform: rotate(7deg)  scale(1.06); }
+    }
+    .b1 { animation-duration: 0.5s, 4.1s; }
+    .b2 { animation-duration: 0.5s, 2.8s; }
+    .b3 { animation-duration: 0.5s, 4.8s; }
+
+    .p0 { animation-delay: 0.36s, 1.16s; }
+    .p1 { animation-delay: 0.27s, 1.07s; }
+    .p2 { animation-delay: 0.30s, 1.10s; }
+    .p3 { animation-delay: 0.45s, 1.25s; }
+    .p4 { animation-delay: 0.16s, 0.96s; }
+    .p5 { animation-delay: 0.29s, 1.09s; }
+    .p6 { animation-delay: 0.25s, 1.05s; }
+    .p7 { animation-delay: 0.19s, 0.99s; }
+    .p8 { animation-delay: 0.40s, 1.20s; }
+    .p9 { animation-delay: 0.34s, 1.14s; }
+    .p10 { animation-delay: 0.12s, 0.92s; }
+    .p11 { animation-delay: 0.18s, 0.98s; }
+    .p12 { animation-delay: 0.30s, 1.10s; }
+    .p13 { animation-delay: 0.59s, 1.39s; }
+    .p14 { animation-delay: 0.11s, 0.91s; }
+    .p15 { animation-delay: 0.29s, 1.09s; }
+    .p16 { animation-delay: 0.54s, 1.34s; }
+    .p17 { animation-delay: 0.35s, 1.15s; }
+    .p18 { animation-delay: 0.48s, 1.28s; }
+    .p19 { animation-delay: 0.60s, 1.40s; }
+    .p20 { animation-delay: 0.59s, 1.39s; }
+    .p21 { animation-delay: 0.67s, 1.47s; }
+    .p22 { animation-delay: 0.29s, 1.09s; }
+    .p23 { animation-delay: 0.65s, 1.45s; }
+    .p24 { animation-delay: 0.66s, 1.46s; }
+    .p25 { animation-delay: 0.34s, 1.14s; }
+    .p26 { animation-delay: 0.53s, 1.33s; }
+    .p27 { animation-delay: 0.31s, 1.11s; }
+    .p28 { animation-delay: 0.28s, 1.08s; }
+    .p29 { animation-delay: 0.53s, 1.33s; }
+
+    /* 가운데 흰 꽃 — 톡 튀어나온 뒤 숨쉬듯 흔들린다 */
+    .core { animation: pop 0.55s cubic-bezier(0.2, 1.3, 0.4, 1) 0.08s both, bob 3s ease-in-out 0.7s infinite; }
+    @keyframes pop {
+      0%   { transform: scale(0.2) rotate(-40deg); opacity: 0; }
+      100% { transform: scale(1)   rotate(0deg);   opacity: 1; }
+    }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0)    scale(1)    rotate(0deg); }
+      50%      { transform: translateY(-6px) scale(1.05) rotate(6deg); }
+    }
+
+    @keyframes wf0 {
+      0%   { transform: translate(0,0) rotate(0deg) scale(0.5); opacity: 0; }
+      15%  { opacity: 0.95; }
+      100% { transform: translate(3px,-108px) rotate(46deg) scale(1); opacity: 0; }
+    }
+    .wf0 { animation: wf0 2.8s ease-out 0.31s infinite; }
+    @keyframes wf1 {
+      0%   { transform: translate(0,0) rotate(0deg) scale(0.5); opacity: 0; }
+      15%  { opacity: 0.95; }
+      100% { transform: translate(42px,-110px) rotate(-116deg) scale(1); opacity: 0; }
+    }
+    .wf1 { animation: wf1 2.8s ease-out 0.56s infinite; }
+    @keyframes wf2 {
+      0%   { transform: translate(0,0) rotate(0deg) scale(0.5); opacity: 0; }
+      15%  { opacity: 0.95; }
+      100% { transform: translate(-77px,-133px) rotate(25deg) scale(1); opacity: 0; }
+    }
+    .wf2 { animation: wf2 2.8s ease-out 1.59s infinite; }
+    @keyframes wf3 {
+      0%   { transform: translate(0,0) rotate(0deg) scale(0.5); opacity: 0; }
+      15%  { opacity: 0.95; }
+      100% { transform: translate(-43px,-139px) rotate(221deg) scale(1); opacity: 0; }
+    }
+    .wf3 { animation: wf3 2.8s ease-out 0.73s infinite; }
+    @keyframes wf4 {
+      0%   { transform: translate(0,0) rotate(0deg) scale(0.5); opacity: 0; }
+      15%  { opacity: 0.95; }
+      100% { transform: translate(53px,-153px) rotate(-161deg) scale(1); opacity: 0; }
+    }
+    .wf4 { animation: wf4 2.8s ease-out 0.35s infinite; }
+    @keyframes wf5 {
+      0%   { transform: translate(0,0) rotate(0deg) scale(0.5); opacity: 0; }
+      15%  { opacity: 0.95; }
+      100% { transform: translate(80px,-133px) rotate(13deg) scale(1); opacity: 0; }
+    }
+    .wf5 { animation: wf5 2.8s ease-out 0.26s infinite; }
+    @keyframes wf6 {
+      0%   { transform: translate(0,0) rotate(0deg) scale(0.5); opacity: 0; }
+      15%  { opacity: 0.95; }
+      100% { transform: translate(52px,-135px) rotate(-189deg) scale(1); opacity: 0; }
+    }
+    .wf6 { animation: wf6 2.8s ease-out 1.48s infinite; }
+    @keyframes wf7 {
+      0%   { transform: translate(0,0) rotate(0deg) scale(0.5); opacity: 0; }
+      15%  { opacity: 0.95; }
+      100% { transform: translate(-75px,-115px) rotate(-32deg) scale(1); opacity: 0; }
+    }
+    .wf7 { animation: wf7 2.8s ease-out 0.35s infinite; }
+  </style>
+
+  <g class="all">
+    <ellipse class="ground" cx="400" cy="400" rx="275" ry="258" fill="url(#wGround)"/>
+
+    <g class="ring ring-out" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"
+       opacity="0.5" filter="url(#wHalo)">
+      <ellipse cx="400" cy="400" rx="268" ry="252" stroke-dasharray="42 36"/>
+    </g>
+    <g class="ring ring-in" fill="none" stroke="#f2f6ff" stroke-width="2.5" stroke-linecap="round"
+       opacity="0.42" filter="url(#wHalo)">
+      <ellipse cx="400" cy="400" rx="202" ry="190" stroke-dasharray="18 46"/>
+    </g>
+
+    <g class="orbit o0">
+      <g transform="translate(302.7 218.4) rotate(187.4) scale(0.98)"><g class="petal p0 b0"><use href="#wleaf"/></g></g>
+      <g transform="translate(282.1 349.6) rotate(25.5) scale(0.81)"><g class="petal p3 b3"><use href="#wleaf"/></g></g>
+      <g transform="translate(594.4 294.1) rotate(285.1) scale(1.22)"><g class="petal p6 b2"><use href="#wleaf"/></g></g>
+      <g transform="translate(289.2 413.0) rotate(172.9) scale(0.98)"><g class="petal p9 b1"><use href="#wleaf"/></g></g>
+      <g transform="translate(365.0 550.0) rotate(264.7) scale(0.95)"><g class="petal p12 b0"><use href="#wleaf"/></g></g>
+      <g transform="translate(266.9 451.4) rotate(30.6) scale(0.79)"><g class="petal p15 b3"><use href="#wleaf"/></g></g>
+      <g transform="translate(262.4 219.7) rotate(334.4) scale(1.01)"><g class="petal p18 b2"><use href="#wleaf"/></g></g>
+      <g transform="translate(500.7 506.2) rotate(184.6) scale(0.84)"><g class="petal p21 b1"><use href="#wleaf"/></g></g>
+      <g transform="translate(499.1 533.1) rotate(334.8) scale(0.98)"><g class="petal p24 b0"><use href="#wleaf"/></g></g>
+      <g transform="translate(234.5 372.1) rotate(14.7) scale(0.90)"><g class="petal p27 b3"><use href="#wleaf"/></g></g>
+    </g>
+    <g class="orbit o1">
+      <g transform="translate(547.1 397.3) rotate(53.4) scale(0.84)"><g class="petal p1 b1"><use href="#wleaf"/></g></g>
+      <g transform="translate(236.7 526.6) rotate(289.1) scale(0.93)"><g class="petal p4 b0"><use href="#wleaf"/></g></g>
+      <g transform="translate(195.2 344.9) rotate(288.5) scale(0.91)"><g class="petal p7 b3"><use href="#wleaf"/></g></g>
+      <g transform="translate(582.7 271.8) rotate(320.6) scale(0.83)"><g class="petal p10 b2"><use href="#wleaf"/></g></g>
+      <g transform="translate(359.5 324.1) rotate(75.3) scale(1.08)"><g class="petal p13 b1"><use href="#wleaf"/></g></g>
+      <g transform="translate(292.5 420.8) rotate(223.3) scale(1.18)"><g class="petal p16 b0"><use href="#wleaf"/></g></g>
+      <g transform="translate(527.4 368.7) rotate(183.3) scale(0.73)"><g class="petal p19 b3"><use href="#wleaf"/></g></g>
+      <g transform="translate(362.5 181.9) rotate(230.8) scale(1.07)"><g class="petal p22 b2"><use href="#wleaf"/></g></g>
+      <g transform="translate(388.3 562.2) rotate(136.5) scale(0.88)"><g class="petal p25 b1"><use href="#wleaf"/></g></g>
+      <g transform="translate(269.1 533.1) rotate(132.2) scale(0.86)"><g class="petal p28 b0"><use href="#wleaf"/></g></g>
+    </g>
+    <g class="orbit o2">
+      <g transform="translate(333.1 516.4) rotate(38.8) scale(0.88)"><g class="petal p2 b2"><use href="#wleaf"/></g></g>
+      <g transform="translate(370.2 202.8) rotate(142.6) scale(1.06)"><g class="petal p5 b1"><use href="#wleaf"/></g></g>
+      <g transform="translate(324.3 329.2) rotate(253.9) scale(0.70)"><g class="petal p8 b0"><use href="#wleaf"/></g></g>
+      <g transform="translate(321.3 471.0) rotate(253.9) scale(0.84)"><g class="petal p11 b3"><use href="#wleaf"/></g></g>
+      <g transform="translate(478.8 453.6) rotate(182.1) scale(1.06)"><g class="petal p14 b2"><use href="#wleaf"/></g></g>
+      <g transform="translate(584.4 477.2) rotate(228.2) scale(0.70)"><g class="petal p17 b1"><use href="#wleaf"/></g></g>
+      <g transform="translate(325.0 300.3) rotate(70.9) scale(0.99)"><g class="petal p20 b0"><use href="#wleaf"/></g></g>
+      <g transform="translate(229.2 395.3) rotate(172.2) scale(0.73)"><g class="petal p23 b3"><use href="#wleaf"/></g></g>
+      <g transform="translate(186.4 470.4) rotate(349.5) scale(0.75)"><g class="petal p26 b2"><use href="#wleaf"/></g></g>
+      <g transform="translate(563.2 378.4) rotate(350.2) scale(0.79)"><g class="petal p29 b1"><use href="#wleaf"/></g></g>
+    </g>
+
+    <g transform="translate(252.6 351.7)"><g class="drift wf0" style="transform-box: fill-box; transform-origin: 50% 50%;"><use href="#wleaf" transform="scale(0.87)"/></g></g>
+    <g transform="translate(324.9 340.5)"><g class="drift wf1" style="transform-box: fill-box; transform-origin: 50% 50%;"><use href="#wleaf" transform="scale(0.72)"/></g></g>
+    <g transform="translate(292.6 337.8)"><g class="drift wf2" style="transform-box: fill-box; transform-origin: 50% 50%;"><use href="#wleaf" transform="scale(0.74)"/></g></g>
+    <g transform="translate(433.7 262.6)"><g class="drift wf3" style="transform-box: fill-box; transform-origin: 50% 50%;"><use href="#wleaf" transform="scale(0.78)"/></g></g>
+    <g transform="translate(352.3 524.2)"><g class="drift wf4" style="transform-box: fill-box; transform-origin: 50% 50%;"><use href="#wleaf" transform="scale(0.65)"/></g></g>
+    <g transform="translate(268.8 384.2)"><g class="drift wf5" style="transform-box: fill-box; transform-origin: 50% 50%;"><use href="#wleaf" transform="scale(0.69)"/></g></g>
+    <g transform="translate(363.9 484.7)"><g class="drift wf6" style="transform-box: fill-box; transform-origin: 50% 50%;"><use href="#wleaf" transform="scale(0.66)"/></g></g>
+    <g transform="translate(457.0 523.5)"><g class="drift wf7" style="transform-box: fill-box; transform-origin: 50% 50%;"><use href="#wleaf" transform="scale(0.87)"/></g></g>
+
+    <!-- 가운데 꽃은 3D로 선다 (js/towers3d.js towers3dSpawnTotem) — 여기엔 흔날리는 꽃잎만 -->
+  </g>
+</svg>

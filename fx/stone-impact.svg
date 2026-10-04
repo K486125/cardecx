@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  돌(rock) 착지 — 서 있는 부분 (섬광 · 사방으로 뻗는 빛 · 튀는 파편). #fx-layer에 선다.
+  기준점(떨어진 자리) = (220, 220) · 전체 길이 0.85초
+  바닥에 눕는 부분(눌린 자국 · 먼지 고리 · 균열 · 충격 고리)은 stone-impact-ground.svg.
+  피해는 비행이 끝나는 이 순간에 들어간다 (board.js가 비행 시간만큼 기다렸다 띄운다)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" width="440" height="440">
+  <defs>
+    <radialGradient id="flash">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="22%"  stop-color="#fff3dc" stop-opacity="0.8"/>
+      <stop offset="52%"  stop-color="#ffcf92" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#e0a468" stop-opacity="0"/>
+    </radialGradient>
+    <!-- 가운데가 빈 고리 — 꽉 찬 원이면 흙 얼룩처럼 보인다 -->
+    <radialGradient id="dust">
+      <stop offset="0%"   stop-color="#c8c3b8" stop-opacity="0"/>
+      <stop offset="48%"  stop-color="#c8c3b8" stop-opacity="0.04"/>
+      <stop offset="70%"  stop-color="#d2cdc2" stop-opacity="0.3"/>
+      <stop offset="88%"  stop-color="#b3ada1" stop-opacity="0.34"/>
+      <stop offset="100%" stop-color="#8f8a80" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="shock">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="84%"  stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="92%"  stop-color="#fff0d2" stop-opacity="0.95"/>
+      <stop offset="97%"  stop-color="#ffc98a" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#ffc98a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shardLit" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#c2c7d1"/>
+      <stop offset="55%"  stop-color="#868c9a"/>
+      <stop offset="100%" stop-color="#4c515c"/>
+    </linearGradient>
+    <linearGradient id="spikeGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="45%"  stop-color="#ffe0ae" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#ffc98a" stop-opacity="0"/>
+    </linearGradient>
+
+    <filter id="tear" x="-90%" y="-90%" width="280%" height="280%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.014 0.045" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="16" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="tear2" x="-90%" y="-90%" width="280%" height="280%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.026 0.062" numOctaves="2" seed="29" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="22" xChannelSelector="R" yChannelSelector="G"/>
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+    <!-- 균열은 살짝만 찢는다 — 많이 흔들면 실금이 아니라 낙서가 된다 -->
+    <filter id="tearCrack" x="-60%" y="-60%" width="220%" height="220%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04 0.03" numOctaves="2" seed="17" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="haze" x="-90%" y="-90%" width="280%" height="280%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+    <filter id="glow" x="-90%" y="-90%" width="280%" height="280%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+    <filter id="chip2" x="-80%" y="-80%" width="260%" height="260%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="2" seed="41" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <style>
+      /* viewBox 좌표를 기준으로 돌려야 어긋나지 않는다 */
+      .c { transform-box: view-box; transform-origin: 220px 220px; }
+
+      .flash { animation: flash 0.3s  ease-out both; }
+      .shock { animation: shock 0.42s cubic-bezier(0.08, 0.7, 0.25, 1) both; }
+      .spike { animation: spike 0.34s cubic-bezier(0.1, 0.8, 0.3, 1) both; }
+      .ring  { animation: ring  0.66s cubic-bezier(0.12, 0.75, 0.3, 1) both; animation-delay: 0.04s; }
+      .ring2 { animation: ring2 0.82s cubic-bezier(0.1, 0.7, 0.3, 1) both;   animation-delay: 0.1s;  }
+      .crack { animation: crack 0.85s ease-out both; }
+      .thud  { animation: thud  0.5s  cubic-bezier(0.1, 0.8, 0.25, 1) both; }
+
+      @keyframes flash {
+        0%   { opacity: 0; transform: scale(0.2);  }
+        12%  { opacity: 1; transform: scale(0.95); }
+        100% { opacity: 0; transform: scale(1.45); }
+      }
+      /* 바닥을 때린 충격 고리 — 낮게 눌러 땅에 붙인다 */
+      @keyframes shock {
+        0%   { opacity: 0;   transform: scale(0.1, 0.06); }
+        14%  { opacity: 1;   }
+        100% { opacity: 0;   transform: scale(1.05, 0.66); }
+      }
+      /* 사방으로 뻗는 빛 — 처음 0.1초의 한 방이 여기서 나온다 */
+      @keyframes spike {
+        0%   { opacity: 0;   transform: scale(0.1); }
+        14%  { opacity: 0.9; }
+        100% { opacity: 0;   transform: scale(1.15); }
+      }
+      @keyframes ring {
+        0%   { opacity: 0;    transform: scale(0.18, 0.11); }
+        24%  { opacity: 0.95; }
+        100% { opacity: 0;    transform: scale(1.12, 0.7); }
+      }
+      @keyframes ring2 {
+        0%   { opacity: 0;   transform: scale(0.32, 0.18); }
+        32%  { opacity: 0.6; }
+        100% { opacity: 0;   transform: scale(1.5, 0.94); }
+      }
+      @keyframes crack {
+        0%   { opacity: 0;    transform: scale(0.3, 0.2); }
+        10%  { opacity: 1;    transform: scale(1, 0.62);  }
+        68%  { opacity: 0.85; }
+        100% { opacity: 0;    transform: scale(1.04, 0.65); }
+      }
+      @keyframes thud {
+        0%   { opacity: 0.85; transform: scale(0.18, 0.11); }
+        20%  { opacity: 0.6;  }
+        100% { opacity: 0;    transform: scale(1.1, 0.66);  }
+      }
+
+      /* 파편 — 조각마다 날아가는 방향·거리·도는 속도가 다르다 */
+      .sh  { transform-box: view-box; transform-origin: 220px 220px;
+             animation-timing-function: cubic-bezier(0.15, 0.7, 0.35, 1); animation-fill-mode: both; }
+      .sh1 { animation: sh1 0.72s; } .sh2 { animation: sh2 0.66s; }
+      .sh3 { animation: sh3 0.8s;  } .sh4 { animation: sh4 0.7s;  }
+      .sh5 { animation: sh5 0.76s; } .sh6 { animation: sh6 0.62s; }
+      .sh7 { animation: sh7 0.84s; } .sh8 { animation: sh8 0.68s; }
+
+      /* 각 조각: 튀어 올랐다가 떨어진다 (세로 이동의 중간 지점이 정점) */
+      @keyframes sh1 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.5)} 10%{opacity:1}
+                       45%{transform:translate(-72px,-64px) rotate(-120deg) scale(1)}
+                       100%{opacity:0;transform:translate(-132px,10px) rotate(-260deg) scale(0.85)} }
+      @keyframes sh2 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.5)} 10%{opacity:1}
+                       45%{transform:translate(62px,-76px) rotate(140deg) scale(1.05)}
+                       100%{opacity:0;transform:translate(118px,14px) rotate(300deg) scale(0.9)} }
+      @keyframes sh3 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.45)} 12%{opacity:1}
+                       48%{transform:translate(-108px,-30px) rotate(-90deg) scale(0.95)}
+                       100%{opacity:0;transform:translate(-172px,28px) rotate(-210deg) scale(0.8)} }
+      @keyframes sh4 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.55)} 10%{opacity:1}
+                       42%{transform:translate(98px,-38px) rotate(110deg) scale(1)}
+                       100%{opacity:0;transform:translate(160px,22px) rotate(250deg) scale(0.82)} }
+      @keyframes sh5 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.4)} 12%{opacity:1}
+                       46%{transform:translate(-26px,-102px) rotate(-160deg) scale(0.9)}
+                       100%{opacity:0;transform:translate(-48px,-8px) rotate(-320deg) scale(0.7)} }
+      @keyframes sh6 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.5)} 10%{opacity:1}
+                       44%{transform:translate(20px,-92px) rotate(120deg) scale(0.95)}
+                       100%{opacity:0;transform:translate(42px,6px) rotate(240deg) scale(0.75)} }
+      @keyframes sh7 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.35)} 14%{opacity:1}
+                       50%{transform:translate(-80px,-12px) rotate(-70deg) scale(0.8)}
+                       100%{opacity:0;transform:translate(-146px,42px) rotate(-170deg) scale(0.62)} }
+      @keyframes sh8 { 0%{opacity:0;transform:translate(0,0) rotate(0) scale(0.38)} 14%{opacity:1}
+                       50%{transform:translate(72px,-10px) rotate(80deg) scale(0.82)}
+                       100%{opacity:0;transform:translate(140px,44px) rotate(190deg) scale(0.6)} }
+    </style>
+  </defs>
+<!-- ── 사방으로 뻗는 빛 ─────────────────────────────────── -->
+  <g class="c spike" filter="url(#glow)">
+    <g fill="url(#spikeGrad)">
+      <polygon points="220,212 356,220 220,228"/>
+      <polygon points="220,212 84,220 220,228"/>
+      <polygon points="213,220 220,128 227,220"/>
+      <polygon points="213,220 220,306 227,220"/>
+      <polygon points="215,215 308,160 225,225"/>
+      <polygon points="225,215 132,160 215,225"/>
+      <polygon points="215,225 306,282 225,215"/>
+      <polygon points="225,225 134,282 215,215"/>
+    </g>
+  </g>
+
+  <!-- ── 부딪힌 순간의 섬광 ───────────────────────────────── -->
+  <circle class="c flash" cx="220" cy="219" r="118" fill="url(#flash)"/>
+
+  <!-- ── 튀는 파편 ────────────────────────────────────────── -->
+  <g filter="url(#chip2)">
+    <polygon class="sh sh1" points="208,206 232,200 240,220 220,232 204,224"
+             fill="url(#shardLit)" stroke="#23262c" stroke-width="3" stroke-linejoin="round"/>
+    <polygon class="sh sh2" points="212,208 236,206 242,226 218,234"
+             fill="url(#shardLit)" stroke="#23262c" stroke-width="3" stroke-linejoin="round"/>
+    <polygon class="sh sh3" points="206,212 226,204 234,222 212,230 200,222"
+             fill="url(#shardLit)" stroke="#23262c" stroke-width="2.6" stroke-linejoin="round"/>
+    <polygon class="sh sh4" points="210,204 234,210 230,230 208,226"
+             fill="url(#shardLit)" stroke="#23262c" stroke-width="2.8" stroke-linejoin="round"/>
+    <polygon class="sh sh5" points="212,210 228,206 236,224 216,230"
+             fill="url(#shardLit)" stroke="#23262c" stroke-width="2.4" stroke-linejoin="round"/>
+    <polygon class="sh sh6" points="208,208 230,212 226,228 206,224"
+             fill="url(#shardLit)" stroke="#23262c" stroke-width="2.4" stroke-linejoin="round"/>
+    <polygon class="sh sh7" points="214,214 226,210 230,222 216,226"
+             fill="url(#shardLit)" stroke="#23262c" stroke-width="2" stroke-linejoin="round"/>
+    <polygon class="sh sh8" points="212,212 224,214 222,226 212,224"
+             fill="url(#shardLit)" stroke="#23262c" stroke-width="2" stroke-linejoin="round"/>
+  </g>
+</svg>

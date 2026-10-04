@@ -1,400 +1,398 @@
 /* ============================================================
-   game.css — 인게임 전용 레이아웃 (16:9 가로 비율)
+   game.css — 인게임 전용 레이아웃 (1600×900 가로 16:9 스테이지)
    game.html에서만 로드됨 — 로비 화면에 영향 없음
 ============================================================ */
 
-/* ── 로딩 화면 ──────────────────────────────────────────── */
-#screen-loading {
-  background: var(--bg);
-  z-index: 200;
-}
-
-.loading-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 28px;
-}
-
-.loading-title {
-  font-size: 36px;
-  font-weight: 800;
-  background: linear-gradient(180deg, #FFD700 0%, #C8A000 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: 3px;
-}
-
-.loading-logo-icon {
-  font-size: 32px;
-  vertical-align: middle;
-  background: linear-gradient(180deg, #FFD700 0%, #C8A000 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  display: inline-block;
-}
-
-#screen-waiting .waiting-card {
-  background: #0F172A;
-}
-
-.loading-bar-wrap {
-  position: relative;
-  width: 320px;
-  height: 28px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 14px;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.12);
-}
-
-.loading-bar-fill {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, var(--btn-primary), #ff6b8a);
-  border-radius: 14px;
-}
-
-.loading-pct-text {
-  position: absolute;
-  top: 50%;
+/* ── 상단 알림 배너 (transition.js showNotice) ────────────── */
+.game-notice {
+  position: fixed;
+  top: 28px;
   left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 13px;
+  transform: translate(-50%, -20px);
+  z-index: 10000;
+  padding: 12px 26px;
+  font-size: 16px;
   font-weight: 700;
+  white-space: nowrap;
   color: #fff;
+  background: rgba(12, 18, 34, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  opacity: 0;
   pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
+.game-notice.visible { opacity: 1; transform: translate(-50%, 0); }
+.game-notice.warn    { border-color: rgba(255, 170, 60, 0.6); color: #ffe2b8; }
+.game-notice.info    { border-color: rgba(120, 190, 255, 0.5); color: #dcecff; }
+
+/* ── 화면 가운데 알림 (transition.js showCenterNotice) ──────
+   흰 글자 + 검은 테두리 + 그림자. 톡 튀어나온 뒤 떠오르며 사라진다 */
+.center-notice {
+  position: fixed;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 10001;
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  color: #fff;
+  -webkit-text-stroke: 6px #000;
+  paint-order: stroke fill;
+  text-shadow: 0 5px 12px rgba(0, 0, 0, 0.8), 0 0 22px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.center-notice.show { animation: center-notice 1.2s cubic-bezier(0.2, 1.1, 0.35, 1) both; }
+
+@keyframes center-notice {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.72); }
+  14%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+  26%  {             transform: translate(-50%, -50%) scale(1); }
+  70%  { opacity: 1; transform: translate(-50%, -58%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -70%) scale(0.98); }
+}
+
 
 /* ════════════════════════════════════════════════════════════
-   게임 화면 — 480×854 세로 고정 (JS가 뷰포트에 맞춰 스케일)
+   게임 화면 — 1600×900 가로 16:9 고정 스테이지
+   game.js initZoom()이 뷰포트에 맞춰 transform: scale()만 적용한다.
+   내부는 전부 px 고정 → 확대/축소해도 리플로우·글자 깨짐이 없다.
+     topbar      76   (좌 나 / 중앙 왕관·타이머·왕관 / 우 상대)
+     game-map   612   (좌 내 타워 3 / 우 적 타워 3, 세로 중앙)
+     bottom-hud 212   (좌 에너지 / 중앙 덱 5칸 / 우 제공 카드 3장)
 ════════════════════════════════════════════════════════════ */
 #screen-game {
   position: fixed;
   top: 50%;
   left: 50%;
-  width:  480px;
-  height: 854px;
+  width:  1600px;
+  height: 900px;
   transform-origin: center center;
-  overflow: visible;
-  background: #111;
-}
-
-/* 게임 화면 배경 클리핑용 내부 레이어 */
-#screen-game::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: #111;
-  z-index: -1;
-  pointer-events: none;
+  overflow: hidden;
+  display: block;
+  background: #0b1020;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.55);
 }
 
 /* ════════════════════════════════════════════════════════════
-   상단 HUD (적 정보) — height: 88px, 2행
+   상단 바 — height 76
 ════════════════════════════════════════════════════════════ */
-.top-hud {
+.game-topbar {
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 88px;
-  background: rgba(14, 6, 6, 0.92);
-  border-bottom: 1px solid rgba(255, 70, 70, 0.2);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 6px 14px;
+  height: 76px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0 28px;
+  background: linear-gradient(180deg, rgba(6, 10, 22, 0.96) 0%, rgba(10, 16, 32, 0.90) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
   z-index: 10;
-  gap: 5px;
 }
 
-/* 1행: 에너지 + 이름/뱃지 + 왕관 */
-.top-hud-row1 {
+.topbar-side {
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-}
-
-.top-hud-row1 .hud-energy-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 140px;
-  flex-shrink: 0;
-}
-
-.top-hud-row1 .hud-energy-bar-track {
-  flex: 1;
-  height: 8px;
-  background: rgba(255,255,255,0.07);
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.1);
-}
-
-.top-hud-row1 .hud-energy-num {
-  font-size: 20px;
-  min-width: 20px;
-}
-
-.top-hud-row1 .hud-player-block {
-  flex: 1;
+  gap: 14px;
   min-width: 0;
-  align-items: flex-start;
 }
 
-/* 2행: 미니 덱 */
-.top-hud-row2 {
+.topbar-me    { justify-content: flex-start; }
+.topbar-enemy { justify-content: flex-end; }
+
+.topbar-center {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
+  gap: 22px;
 }
+
+/* 관전자 수는 흐름 밖에 둔다 — 표시될 때 타이머가 중앙에서 밀리지 않도록 */
+.topbar-center .spectator-count {
+  position: absolute;
+  left: calc(100% + 22px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* 타이머 양옆 왕관 — 타이머 숫자와 같은 체급 */
+.topbar-center .hud-crowns { gap: 6px; }
+.topbar-center .hud-crown-icon { font-size: 44px; }
+.topbar-center .hud-crown-num {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 40px;
+  line-height: 1;
+  min-width: 26px;
+  text-align: center;
+  -webkit-text-stroke: 1px #000;
+}
+/* 진영 색으로 누구의 왕관인지 구분 */
+.crowns-me .hud-crown-icon    { color: #7cc4ff; filter: drop-shadow(0 0 6px rgba(80,160,255,0.7)); }
+.crowns-me .hud-crown-num     { color: #7cc4ff; text-shadow: 0 0 10px rgba(80,160,255,0.6), 0 3px 0 #000; }
+.crowns-enemy .hud-crown-icon { color: #ff8a8a; filter: drop-shadow(0 0 6px rgba(255,80,80,0.7)); }
+.crowns-enemy .hud-crown-num  { color: #ff8a8a; text-shadow: 0 0 10px rgba(255,80,80,0.6), 0 3px 0 #000; }
 
 /* ════════════════════════════════════════════════════════════
-   게임 맵 — top: 88px, bottom: 270px (height ≈ 496px)
+   게임 필드 — top 76 / bottom 212 → 화면에 보이는 칸은 1600×612
+   맵 자체는 16×9 타일(1600×900)이라 세로로 더 길다.
+   board.js initMapPan()이 휠 드래그·휠 스크롤로 움직인다.
 ════════════════════════════════════════════════════════════ */
 .game-map {
   position: absolute;
-  top: 88px;
-  bottom: 270px;
+  top: 76px;
+  bottom: 212px;
   left: 0; right: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: visible;
-  background: linear-gradient(
-    to bottom,
-    rgba(180, 20, 20, 0.09) 0%,
-    transparent 40%,
-    transparent 60%,
-    rgba(20, 80, 200, 0.09) 100%
-  );
+  overflow: hidden;
+  background: linear-gradient(180deg, #0e1730 0%, #0c1429 100%);
 }
 
-/* ── 적 타워 존 (위) ──────────────────────────────────── */
-.enemy-zone {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding-top: 50px;
-  overflow: visible;
-  position: relative;
-}
-
-/* ── 구분선 (강 — 배경이미지에 표현되므로 투명) ──────── */
-.zone-divider {
+/* 필드 뒤의 밤바다 · 밤하늘 (js/seasky.js) — 맵이 움직여도 그 자리에 있다 */
+.sea-sky {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: 24px;
-  flex-shrink: 0;
-  position: relative;
+  height: 100%;
+  pointer-events: none;
+}
+
+.map-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: default;
+}
+
+/* 맵을 끌고 있는 중 — 글자가 드래그로 선택되지 않게 한다 */
+.map-viewport.panning {
+  cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── 16×9 타일 맵 ──────────────────────────────────────────
+   --tile 한 칸 크기. 타워도 정확히 한 칸을 차지한다 */
+.tile-map {
+  --tile: 100px;
+  --cols: 16;
+  --rows: 9;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width:  calc(var(--tile) * var(--cols));
+  height: calc(var(--tile) * var(--rows));
+  /* 왼쪽 위가 기준 — board.js가 translate + scale을 이 기준으로 계산한다 */
+  transform-origin: 0 0;
+  will-change: transform;
+  /* 색과 타일은 .ground(바닥판)가 들고 있다 — 여기는 좌표계만 담당한다 */
+}
+
+/* ── 바닥판 ────────────────────────────────────────────────
+   필드를 완전한 평면이 아니라 살짝 눕혀 깊이를 준다.
+   공격 연출들이 입체로 그려져 있어서 바닥이 납작하면 따로 논다.
+
+   **이 겹만 눕는다.** 타워·이펙트·피해 숫자는 눕지 않고 그대로 서 있어서
+   (클래시 로얄식 2.5D) 글자도 안 찌그러지고, 무엇보다 타일 좌표계가
+   그대로라 조준·사거리·설치 판정은 한 줄도 바뀌지 않는다.
+
+   기준점을 맵 한가운데로 두면 타워가 있는 줄(2·4·6행)의 어긋남이 5px 안쪽이라
+   눈에 띄지 않는다. 각도를 키우면 그만큼 어긋나므로 --field-tilt만 조심해서 만진다. */
+.tile-map {
+  --field-tilt: 18deg;
+  --field-depth: 1100px;   /* 작을수록 원근이 세진다 (위아래 폭 차이 약 22%) */
+}
+
+.ground {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform: perspective(var(--field-depth)) rotateX(var(--field-tilt));
+  transform-origin: 50% 50%;
+  /* 진영 색 — 왼쪽 파랑 / 오른쪽 빨강 */
+  background:
+    linear-gradient(90deg,
+      rgba(40, 110, 255, 0.20) 0%,
+      rgba(40, 110, 255, 0.06) 32%,
+      transparent 46%,
+      transparent 54%,
+      rgba(255, 50, 50, 0.06) 68%,
+      rgba(255, 50, 50, 0.20) 100%),
+    linear-gradient(180deg, #16223f 0%, #121b33 50%, #0f172c 100%);
+  /* 눕힌 판의 가장자리 — 두께가 있는 판처럼 보이게 */
+  box-shadow:
+    0 -2px 0 rgba(150, 200, 255, 0.18),
+    0 3px 0 rgba(0, 0, 0, 0.55),
+    0 26px 48px rgba(0, 0, 0, 0.55);
+}
+
+/* 멀수록 어둡고 흐리게 — 눕힌 느낌의 절반은 이 그라데이션이 만든다 */
+/* 사거리 표시 겹 — 바닥판 안, 그늘(.ground-depth) 위.
+   여기 든 것은 타일과 똑같이 눕어 보인다. 글자가 없는 표시만 넣는다
+   (숫자·아이콘을 넣으면 같이 찌그러진다). */
+.cast-ground {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.ground-depth {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
   z-index: 2;
+  background:
+    linear-gradient(180deg,
+      rgba(6, 10, 22, 0.55) 0%,
+      rgba(6, 10, 22, 0.22) 18%,
+      rgba(6, 10, 22, 0) 46%,
+      rgba(255, 255, 255, 0.03) 92%,
+      rgba(255, 255, 255, 0.06) 100%);
 }
 
-/* ── 내 타워 존 (아래) ───────────────────────────────── */
-.my-zone {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  padding-bottom: 50px;
-  overflow: visible;
-  position: relative;
+/* ── 타일 한 칸 한 칸 (board.js buildTiles) ────────────────
+   칸마다 면(배경)과 테두리가 있는 실제 요소를 깐다 */
+.tile-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
-/* ── 타워 컬럼 — CR 스타일: 좌우 프린세스, 중앙 킹 ──── */
-.tower-column {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  width: 380px;
-  overflow: visible;
+.tile {
+  position: absolute;
+  left: calc(var(--col) * var(--tile));
+  top:  calc(var(--row) * var(--tile));
+  width:  var(--tile);
+  height: var(--tile);
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  /* 면 — 위 모서리에 빛, 아래에 그늘. 눕힌 바닥 위에서 도톰한 판으로 읽힌다 */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.085) 0%, rgba(255, 255, 255, 0.02) 42%, rgba(0, 0, 0, 0.13) 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.13),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.3),
+    inset 2px 0 0 rgba(255, 255, 255, 0.04),
+    inset -2px 0 0 rgba(0, 0, 0, 0.14);
 }
 
-/* 적 컬럼: 프린세스 위, 킹 아래(강 방향) */
-.enemy-column {
-  align-items: flex-start;
+/* 진영 색 — 내 쪽 파랑 / 상대 쪽 빨강 / 가운데 두 열은 강 */
+.tile-mine {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.012) 45%, rgba(0, 0, 0, 0.10) 100%),
+    linear-gradient(0deg, rgba(60, 130, 255, 0.16), rgba(60, 130, 255, 0.16));
+  border-color: rgba(140, 190, 255, 0.20);
 }
 
-.enemy-column .king-tower {
-  margin-top: 38px;
+.tile-enemy {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.012) 45%, rgba(0, 0, 0, 0.10) 100%),
+    linear-gradient(0deg, rgba(255, 70, 70, 0.15), rgba(255, 70, 70, 0.15));
+  border-color: rgba(255, 160, 160, 0.20);
 }
 
-/* 내 컬럼: 프린세스 아래, 킹 위(강 방향) */
-.my-column {
-  align-items: flex-end;
+.tile-river {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 50%, rgba(0, 0, 0, 0.12) 100%),
+    linear-gradient(0deg, rgba(90, 175, 255, 0.20), rgba(90, 175, 255, 0.20));
+  border-color: rgba(170, 215, 255, 0.26);
 }
 
-.my-column .king-tower {
-  margin-bottom: 38px;
+/* 중앙 강 (세로) */
+.zone-divider {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%;
+  width: 56px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(90, 170, 255, 0.10) 30%,
+    rgba(120, 190, 255, 0.18) 50%,
+    rgba(90, 170, 255, 0.10) 70%,
+    transparent 100%);
+  z-index: 1;
 }
+
+/* ── 타워는 타일 한 칸에 딱 맞춰 놓인다 ───────────────────
+   --col/--row는 game.html의 style에 적혀 있다 (0부터) */
 
 /* ════════════════════════════════════════════════════════════
-   HUD 에너지 공통
+   HUD 공통 — 에너지 / 이름 / 왕관
 ════════════════════════════════════════════════════════════ */
 .hud-energy-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
 }
 
 .hud-energy-num {
   font-size: 26px;
   font-weight: 900;
-  min-width: 28px;
+  min-width: 36px;
   text-align: center;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .enemy-energy-num {
-  color: #ff7070;
-  text-shadow: 0 0 10px rgba(255,80,80,0.5);
+  color: #ff8080;
+  text-shadow: 0 0 10px rgba(255, 80, 80, 0.5), 0 2px 0 #000;
 }
 
 .my-energy-num {
-  color: #4dd0e1;
-  text-shadow: 0 0 10px rgba(0,200,220,0.5);
+  color: #e9fdff;
+  text-shadow: 0 2px 0 #00333a, 0 0 12px rgba(0, 220, 240, 0.8);
 }
 
 .hud-energy-bar-track {
-  width: 140px;
-  height: 10px;
-  background: rgba(255,255,255,0.07);
-  border-radius: 5px;
+  width: 180px;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 6px;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 .hud-energy-bar-fill {
   height: 100%;
-  border-radius: 5px;
+  border-radius: 6px;
   transition: width 0.3s ease;
 }
 
 .enemy-fill {
   background: linear-gradient(90deg, #8b0000, #cc2020, #ff5555);
-  box-shadow: 0 0 8px rgba(200,40,40,0.5);
+  box-shadow: 0 0 8px rgba(200, 40, 40, 0.5);
 }
 
 .my-fill {
   background: linear-gradient(90deg, #006070, #0097a7, #4dd0e1);
-  box-shadow: 0 0 8px rgba(0,180,200,0.4);
-}
-
-/* ── 에너지 바 (하단 HUD — energy.js 호환) ────────────── */
-.energy-bar-wrap {
-  width: 120px;
-  height: 10px;
-  background: rgba(255,255,255,0.07);
-  border-radius: 5px;
-  overflow: hidden;
-  border: 1px solid rgba(0,188,212,0.2);
-}
-
-.energy-bar {
-  height: 100%;
-  border-radius: 5px;
-  transition: width 0.3s ease;
-}
-
-.energy-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.energy-row.energy-shake {
-  animation: energy-shake 0.5s ease;
-}
-
-@keyframes energy-shake {
-  0%,100% { transform: translateX(0); }
-  20%     { transform: translateX(-4px); }
-  40%     { transform: translateX(4px); }
-  60%     { transform: translateX(-4px); }
-  80%     { transform: translateX(4px); }
-}
-
-/* ── 미니 덱 (상단 HUD, 적 덱 표시) ──────────────────── */
-.hud-mini-deck {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.hud-mini-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: rgba(255,255,255,0.4);
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-}
-
-.hud-mini-slots {
-  display: flex;
-  gap: 4px;
-}
-
-.hud-mini-slot {
-  width: 28px;
-  height: 38px;
-  background: rgba(255,255,255,0.03);
-  border: 1px dashed rgba(255,255,255,0.1);
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-/* ── HUD 플레이어 블록 ────────────────────────────────── */
-.hud-player-block {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  align-items: flex-end;
-}
-
-.hud-name-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  box-shadow: 0 0 8px rgba(0, 180, 200, 0.4);
 }
 
 .hud-player-name {
-  font-size: 15px;
+  font-size: 22px;
   font-weight: 800;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 160px;
+  max-width: 320px;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.7);
 }
 
-.enemy-name { color: #ff8080; }
-.my-name    { color: #6abaff; }
+.enemy-name { color: #ff8a8a; }
+.my-name    { color: #7cc4ff; }
 
-.hud-clan-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-}
-
-.hud-clan-text {
-  font-size: 11px;
-  color: rgba(255,255,255,0.38);
-  letter-spacing: 0.3px;
-}
-
-/* ── HUD 왕관 (파괴 타워 수) ──────────────────────────── */
 .hud-crowns {
   display: flex;
   align-items: center;
@@ -403,129 +401,22 @@
 }
 
 .hud-crown-icon {
-  font-size: 22px;
+  font-size: 30px;
   color: #ffd700;
-  filter: drop-shadow(0 0 4px rgba(255,215,0,0.5));
+  filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5));
 }
 
 .hud-crown-num {
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 900;
   color: #ffd700;
-  text-shadow: 0 0 8px rgba(255,215,0,0.5);
-  min-width: 16px;
-}
-
-/* ════════════════════════════════════════════════════════════
-   하단 HUD (내 정보) — height: 270px, 세로 열 배치
-════════════════════════════════════════════════════════════ */
-.bottom-hud {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 270px;
-  background: rgba(8, 12, 24, 0.93);
-  border-top: 1px solid rgba(70,120,255,0.25);
-  display: flex;
-  flex-direction: column;
-  padding: 8px 14px 10px;
-  gap: 5px;
-  z-index: 10;
-}
-
-/* 플레이어 정보 행 (상단) */
-.bottom-player-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-  height: 34px;
-}
-
-.bottom-player-row .hud-player-block {
-  flex: 1;
-  min-width: 0;
-}
-
-/* 에너지 행 (덱 바로 아래, 가로) */
-.bottom-energy-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  padding: 1px 0;
-}
-
-.bottom-energy-row .hud-energy-num {
-  font-size: 20px;
-  min-width: 22px;
-  flex-shrink: 0;
-}
-
-.bottom-energy-row .energy-bar-wrap {
-  flex: 1;
-  height: 14px;
-  width: auto;
-  border-radius: 7px;
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(0,188,212,0.2);
-  overflow: hidden;
-}
-
-.bottom-energy-row .energy-bar {
-  height: 100%;
-  border-radius: 7px;
-  background: linear-gradient(90deg, #006070, #0097a7, #4dd0e1);
-  box-shadow: 0 0 8px rgba(0,180,200,0.4);
-  transition: width 0.3s ease;
-}
-
-/* ════════════════════════════════════════════════════════════
-   턴 뱃지 + 카운트다운
-════════════════════════════════════════════════════════════ */
-.turn-countdown {
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--text-accent);
-  opacity: 0.8;
-  min-width: 24px;
-  letter-spacing: 0.3px;
-}
-
-.turn-countdown.urgent {
-  color: #ff4d6d;
-  opacity: 1;
-  animation: countdownPulse 0.5s ease-in-out infinite alternate;
-}
-
-@keyframes countdownPulse {
-  from { opacity: 0.65; }
-  to   { opacity: 1; }
-}
-
-.turn-badge {
-  font-size: 10px;
-  font-weight: 800;
-  padding: 2px 9px;
-  border-radius: 10px;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.active-turn {
-  background: #e94560;
-  color: #fff;
-  box-shadow: 0 0 8px rgba(233,69,96,0.5);
-}
-
-.next-turn {
-  background: rgba(255,255,255,0.07);
-  color: rgba(255,255,255,0.38);
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.5), 0 2px 0 #000;
+  min-width: 18px;
 }
 
 /* ── 동결 아이콘 ─────────────────────────────────────── */
 .freeze-icon {
-  font-size: 14px;
+  font-size: 24px;
   color: #64b5f6;
   flex-shrink: 0;
   animation: freeze-spin 3s linear infinite;
@@ -536,521 +427,118 @@
   to   { transform: rotate(360deg); }
 }
 
-/* ════════════════════════════════════════════════════════════
-   맵 중앙 타이머 오버레이 (채팅 기능 임시 제거)
-════════════════════════════════════════════════════════════ */
-.chat-center-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  z-index: 20;
-  pointer-events: none;
+/* ── 에너지 흔들림 (energy.js — 에너지 부족) ─────────────── */
+.energy-row.energy-shake {
+  animation: energy-shake 0.5s ease;
 }
 
-/* ── 관전자 수 표시 ──────────────────────────────────── */
-.spectator-count {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  color: #90caf9;
-  font-size: 12px;
-  font-weight: 700;
-  margin-bottom: 2px;
-}
-
-.spectator-eye-icon {
-  font-size: 15px;
-  color: #90caf9;
-}
-
-/* ── 오버타임 메시지 ─────────────────────────────────── */
-.overtime-message {
-  font-family: 'Black Han Sans', sans-serif;
-  font-size: 3rem;
-  font-weight: 900;
-  color: #ffffff;
-  white-space: nowrap;
-  letter-spacing: 3px;
-  opacity: 0;
-  transform: scale(0.3);
-  pointer-events: none;
-  -webkit-text-stroke: 1px #000;
-  text-shadow:
-    -1px  0    0 #000,
-     1px  0    0 #000,
-     0   -1px  0 #000,
-     0    1px  0 #000,
-     1px  3px  0 rgba(0,0,0,0.9),
-     3px  6px  0 rgba(0,0,0,0.6);
-}
-
-.overtime-message.show {
-  animation: go-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-@keyframes overtime-enter {
-  0%   { opacity: 0; transform: scale(0.6) translateY(-8px); }
-  60%  { opacity: 1; transform: scale(1.1) translateY(0); }
-  100% { opacity: 1; transform: scale(1.0) translateY(0); }
+@keyframes energy-shake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-6px); }
+  40%     { transform: translateX(6px); }
+  60%     { transform: translateX(-6px); }
+  80%     { transform: translateX(6px); }
 }
 
 /* ════════════════════════════════════════════════════════════
-   타워 공통 — 정사각형 블록
+   하단 HUD — height 212 / 좌 에너지 · 중앙 덱 · 우 제공 카드
 ════════════════════════════════════════════════════════════ */
-.tower {
-  position: relative;
-  display: flex;
-  flex-direction: column;
+.bottom-hud {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 212px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;   /* 덱이 정확히 가로 중앙 */
   align-items: center;
-  cursor: default;
-  transition: transform 0.15s ease, filter 0.15s ease;
-  overflow: visible;
-  --tw: 64px;
-  --th: 64px;
-}
-
-.king-tower {
-  --tw: 82px;
-  --th: 82px;
-  margin: 0 14px;
-}
-
-.tower-block {
-  width:  var(--tw);
-  height: var(--th);
-  flex-shrink: 0;
-}
-
-.tower-body {
-  width: 100%;
-  height: 100%;
-  border-radius: 3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-/* 내 타워 — 파란색 */
-.my-tower .tower-body {
-  background: #1e5bbf;
-  border: 2px solid #4a8fee;
-}
-
-.my-tower.king-tower .tower-body {
-  background: #1448a8;
-  border: 2px solid #5a9eff;
-  box-shadow: 0 0 14px rgba(60,130,255,0.3);
-}
-
-/* 적 타워 — 빨간색 */
-.enemy-tower .tower-body {
-  background: #b01818;
-  border: 2px solid #ee4444;
-}
-
-.enemy-tower.king-tower .tower-body {
-  background: #900808;
-  border: 2px solid #ff5555;
-  box-shadow: 0 0 14px rgba(255,60,60,0.3);
-}
-
-.tower-icon {
-  font-size: 28px;
-  color: rgba(255,255,255,0.8);
-  pointer-events: none;
-  user-select: none;
-}
-
-.king-tower .tower-icon {
-  font-size: 36px;
-  color: rgba(255,230,100,0.92);
-}
-
-/* ── 드래그 오버 ──────────────────────────────────────── */
-.tower.drag-over {
-  transform: scale(1.08) translateY(-2px);
-}
-.tower.drag-over .tower-body {
-  filter: brightness(1.6) saturate(1.3);
-  outline: 2px solid rgba(233,69,96,0.9);
-  outline-offset: 2px;
-}
-
-.tower.drag-over-heal {
-  transform: scale(1.08) translateY(-2px);
-}
-.tower.drag-over-heal .tower-body {
-  filter: brightness(1.6) saturate(1.3);
-  outline: 2px solid rgba(76,175,80,0.9);
-  outline-offset: 2px;
-}
-
-/* ── 파괴된 타워 ──────────────────────────────────────── */
-.tower.destroyed {
-  pointer-events: none;
-  opacity: 0;
-}
-
-/* ── 방어 배지 ────────────────────────────────────────── */
-.tower-defense-badge {
-  visibility: hidden;
-  position: absolute;
-  bottom: -6px;
-  right: -6px;
-  font-size: 12px;
-  color: #64b5f6;
-  background: rgba(18,18,28,0.85);
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  animation: defense-pulse 1.2s infinite alternate;
-}
-
-.tower.has-defense .tower-defense-badge { visibility: visible; }
-
-@keyframes defense-pulse {
-  from { box-shadow: 0 0 4px rgba(100,181,246,0.5); }
-  to   { box-shadow: 0 0 10px rgba(100,181,246,0.9); }
-}
-
-/* ── 악몽 배지 ────────────────────────────────────────── */
-.tower-nightmare-badge {
-  visibility: hidden;
-  position: absolute;
-  bottom: -6px;
-  left: -6px;
-  font-size: 11px;
-  background: rgba(18,12,28,0.88);
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  animation: nightmare-pulse 1.0s infinite alternate;
-}
-
-.tower.has-nightmare .tower-nightmare-badge { visibility: visible; }
-
-@keyframes nightmare-pulse {
-  from { box-shadow: 0 0 4px rgba(233,69,96,0.5); }
-  to   { box-shadow: 0 0 10px rgba(233,69,96,0.9); }
-}
-
-/* ── 파멸의 낙인 배지 ────────────────────────────────── */
-.tower-doom-seal-badge {
-  visibility: hidden;
-  position: absolute;
-  bottom: -6px;
-  right: -6px;
-  font-size: 11px;
-  background: rgba(18,12,28,0.88);
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  animation: doom-seal-pulse 1.0s infinite alternate;
-}
-
-.tower.has-doom-seal .tower-doom-seal-badge { visibility: visible; }
-
-@keyframes doom-seal-pulse {
-  from { box-shadow: 0 0 4px rgba(255,160,0,0.5); }
-  to   { box-shadow: 0 0 10px rgba(255,160,0,0.9); }
-}
-
-/* ── 반사 거울 배지 ────────────────────────────────── */
-.tower-mirror-badge {
-  visibility: hidden;
-  position: absolute;
-  top: -6px;
-  left: -6px;
-  font-size: 14px;
-  line-height: 1;
-  background: rgba(200,230,255,0.15);
-  border-radius: 50%;
-  padding: 2px;
-  animation: mirror-pulse 1.2s infinite alternate;
-}
-
-.tower.has-mirror .tower-mirror-badge { visibility: visible; }
-
-@keyframes mirror-pulse {
-  from { filter: drop-shadow(0 0 3px rgba(180,220,255,0.6)); }
-  to   { filter: drop-shadow(0 0 8px rgba(180,220,255,1.0)); }
-}
-
-/* ── 힐량 감소 배지 ────────────────────────────────── */
-.tower-heal-reduction-badge {
-  visibility: hidden;
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  font-size: 12px;
-  line-height: 1;
-  background: rgba(0,0,0,0.4);
-  border-radius: 50%;
-  padding: 2px;
-}
-
-.tower.has-heal-reduction .tower-heal-reduction-badge { visibility: visible; }
-
-/* ════════════════════════════════════════════════════════════
-   빌보드 HP UI (타워 위에 부유)
-════════════════════════════════════════════════════════════ */
-.tower-billboard {
-  position: absolute;
-  bottom: calc(100% + 5px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(var(--tw) + 14px);
-  min-width: 66px;
-  background: rgba(0,0,0,0.88);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 5px;
-  padding: 3px 5px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  z-index: 25;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-/* 적 타워 HP: 기본(타워 위)과 동일 — 별도 오버라이드 없음 */
-
-.tower-label {
-  font-size: 8px;
-  font-weight: 800;
-  color: #ffd700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-}
-
-.tower-billboard .hp-bar-wrap {
-  width: 100%;
-  height: 6px;
-  background: rgba(0,0,0,0.5);
-  border-radius: 3px;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.07);
-}
-
-.hp-bar {
-  height: 100%;
-  border-radius: 3px;
-  background: var(--hp-high);
-  transition: width 0.4s ease, background 0.4s ease;
-}
-
-.hp-text {
-  font-size: 8px;
-  font-weight: 800;
-  color: rgba(255,255,255,0.92);
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-}
-
-/* ════════════════════════════════════════════════════════════
-   말풍선 — 킹 타워에서 표시
-════════════════════════════════════════════════════════════ */
-.speech-bubble {
-  position: absolute;
-  bottom: calc(100% + 62px);
-  left: 50%;
-  transform: translateX(-50%) scale(0.8);
-  background: rgba(18,18,28,0.97);
-  border: 1px solid rgba(255,255,255,0.14);
-  color: #fff;
-  border-radius: 12px;
-  padding: 5px 10px;
-  font-size: 19px;
-  z-index: 40;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.25s ease, transform 0.25s ease;
-  width: max-content;
-  max-width: 160px;
-  white-space: normal;
-  word-break: break-word;
-  text-align: center;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-}
-
-.speech-bubble.visible {
-  opacity: 1;
-  transform: translateX(-50%) scale(1);
-}
-
-.speech-bubble.upper-bubble {
-  bottom: calc(100% + 126px);
-  font-size: 16px;
-  opacity: 0;
-  transform: translateX(-50%) scale(0.75);
-}
-
-.speech-bubble.upper-bubble.visible {
-  opacity: 0.8;
-  transform: translateX(-50%) scale(0.9);
-}
-
-.speech-bubble::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: rgba(18,18,28,0.97);
-}
-
-.speech-bubble.upper-bubble::after { display: none; }
-
-/* 적 킹 타워 말풍선 — 기본(타워 위)과 동일 — 별도 오버라이드 없음 */
-
-/* 내 킹 타워 말풍선 — 타워 아래(강 반대 방향)에 표시 */
-.my-tower.king-tower .speech-bubble {
-  bottom: auto;
-  top: calc(100% + 62px);
-  transform: translateX(-50%) scale(0.8);
-}
-
-.my-tower.king-tower .speech-bubble.visible {
-  opacity: 1;
-  transform: translateX(-50%) scale(1);
-}
-
-.my-tower.king-tower .speech-bubble.upper-bubble {
-  bottom: auto;
-  top: calc(100% + 126px);
-  transform: translateX(-50%) scale(0.75);
-}
-
-.my-tower.king-tower .speech-bubble.upper-bubble.visible {
-  opacity: 0.8;
-  transform: translateX(-50%) scale(0.9);
-}
-
-.my-tower.king-tower .speech-bubble::after {
-  top: auto;
-  bottom: 100%;
-  border-top-color: transparent;
-  border-bottom-color: rgba(18,18,28,0.97);
-}
-
-/* ── DOT 인디케이터 ─────────────────────────────────── */
-.dot-indicator {
-  position: absolute;
-  top: 2px;
-  right: -22px;
-  display: flex;
-  gap: 2px;
-  flex-wrap: wrap;
-  max-width: 48px;
+  column-gap: 28px;
+  padding: 0 28px;
+  background: linear-gradient(180deg, rgba(14, 20, 40, 0.97) 0%, rgba(6, 9, 20, 0.99) 100%);
+  border-top: 1px solid rgba(120, 160, 255, 0.18);
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.5);
   z-index: 10;
 }
 
-.dot-badge {
-  font-size: 10px;
-  animation: dot-pulse 0.8s infinite alternate;
-}
-.dot-badge .material-symbols-outlined {
-  font-size: 14px;
-  vertical-align: middle;
-  line-height: 1;
+/* ── 좌: 에너지 ──────────────────────────────────────────── */
+.hud-left {
+  justify-self: start;
+  width: 100%;
+  max-width: 400px;
 }
 
-@keyframes dot-pulse {
-  from { transform: scale(1); }
-  to   { transform: scale(1.3); }
-}
-
-/* ════════════════════════════════════════════════════════════
-   제공 카드 섹션
-════════════════════════════════════════════════════════════ */
-.offer-section {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow: visible;
-  flex-shrink: 0;
-}
-
-.section-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-secondary);
-}
-
-.offer-header {
+.bottom-energy-row {
   display: flex;
   align-items: center;
-  flex-shrink: 0;
+  gap: 16px;
 }
 
-.offer-cards {
+.energy-orb {
+  width: 84px;
+  height: 84px;
+  flex: 0 0 auto;
+  border-radius: 50%;
   display: flex;
-  gap: 10px;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  overflow: visible;
+  background: radial-gradient(circle at 35% 30%, #8ff6ff 0%, #13b5c9 40%, #006070 75%, #00333a 100%);
+  border: 3px solid #0b1020;
+  box-shadow:
+    0 5px 0 #00262c,
+    0 8px 16px rgba(0, 0, 0, 0.6),
+    0 0 18px rgba(0, 200, 230, 0.35),
+    inset 0 2px 3px rgba(255, 255, 255, 0.55),
+    inset 0 -6px 10px rgba(0, 0, 0, 0.35);
 }
 
-.offer-cards .card {
-  width: 60px !important;
-  height: 82px !important;
-  padding: 5px 3px 3px;
+.energy-orb .hud-energy-num {
+  font-size: 32px;
+  min-width: 0;
+  color: #000;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
-.offer-cards .card .card-icon { font-size: 20px; }
-.offer-cards .card .card-name { font-size: 8px; }
-.offer-cards .card .card-energy-cost { font-size: 9px; }
-
-.offer-placeholder {
-  color: var(--text-secondary);
-  font-size: 12px;
-  padding: 6px 8px;
+.energy-col {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.deck-full-msg {
-  font-size: 10px;
-  font-weight: 700;
-  color: #ff9800;
-  padding: 3px 8px;
-  background: rgba(255,152,0,0.12);
-  border: 1px solid rgba(255,152,0,0.3);
-  border-radius: 5px;
-  animation: pulse-warn 1.2s infinite alternate;
-  flex-shrink: 0;
+.energy-caption {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: rgba(160, 230, 245, 0.75);
+  white-space: nowrap;
 }
 
-@keyframes pulse-warn {
-  from { opacity: 0.7; }
-  to   { opacity: 1; }
+.energy-bar-wrap {
+  width: 100%;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 188, 212, 0.3);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.7);
 }
 
-/* ════════════════════════════════════════════════════════════
-   덱 영역
-════════════════════════════════════════════════════════════ */
+.energy-bar {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.bottom-energy-row .energy-bar {
+  background: linear-gradient(180deg, #7ff0ff 0%, #19b8cc 45%, #007a8a 100%);
+  box-shadow: 0 0 10px rgba(0, 200, 230, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* ── 중앙: 덱 슬롯 5칸 ───────────────────────────────────── */
 .deck-area-wrapper {
-  flex-shrink: 0;
+  justify-self: center;
   display: flex;
   justify-content: center;
+  padding-bottom: 18px;           /* 단축키 라벨 자리 */
 }
 
 .deck-slots-wrap {
@@ -1059,12 +547,180 @@
 
 .deck-slots {
   display: flex;
-  gap: 8px;
+  gap: 14px;
 }
 
-.deck-slots.deck-blurred {
+.deck-slots.deck-blurred .deck-slot {
   filter: blur(3px);
   pointer-events: none;
+}
+
+.deck-slot {
+  width: 118px;
+  height: 160px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 2px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: border-color var(--transition);
+  overflow: visible;
+}
+
+/* 단축키 (Q W E R T) — 키보드 키 모양의 배지를 슬롯 위쪽 가장자리에 걸쳐 둔다.
+   예전엔 슬롯 아래 12px·흐린 글자라 화면 끝에 잘려 거의 안 보였다.
+   왼쪽 위는 에너지 비용, 오른쪽 위는 등급 점이 쓰므로 가운데에 둔다.
+   관전용 덱(data-key 없음)에는 붙지 않는다. */
+.deck-slot[data-key]::before {
+  content: attr(data-key);
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  min-width: 30px;
+  height: 28px;
+  padding: 0 7px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+  color: #ffffff;
+  background: linear-gradient(180deg, #3b4560 0%, #232a3d 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  border-radius: 7px;
+  /* 아랫면 두께 — 눌리는 키처럼 보이게 */
+  box-shadow: 0 3px 0 #10141f, 0 5px 10px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+/* 빈 슬롯은 누를 게 없다 — 흐리게 */
+.deck-slot[data-key]:empty::before {
+  color: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.18);
+  background: #1b2030;
+  box-shadow: 0 2px 0 #10141f;
+}
+
+/* 지금 들고 있는 슬롯 — 키가 눌린 채로 금색 */
+.deck-slot.slot-selected[data-key]::before {
+  color: #2a1a00;
+  background: linear-gradient(180deg, #ffe38a 0%, #ffbf3c 100%);
+  border-color: #fff2c2;
+  box-shadow: 0 1px 0 #8a5a00, 0 0 14px rgba(255, 200, 80, 0.75);
+  transform: translateX(-50%) translateY(2px);
+}
+
+.deck-slot:empty::after {
+  content: '';
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px dashed rgba(255, 255, 255, 0.08);
+}
+
+/* ── 슬롯 선택 강조 · 개수 표시 · 대체 ───────────────────── */
+/* 개수는 카드를 집었을 때(선택 중)만, 카드 한가운데에 크게 */
+.card-count {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 54px;
+  font-weight: 900;
+  line-height: 1;
+  color: #ffffff;
+  -webkit-text-stroke: 4px #000;
+  paint-order: stroke fill;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.85);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.deck-slot.slot-selected .card-count,
+.sticky-clone .card-count { display: flex; }
+
+.card-count-always { display: flex; }
+
+.card-count-always {
+  font-size: 26px;
+  -webkit-text-stroke: 3px #000;
+}
+
+.deck-slot.slot-selected {
+  border-color: #ffd166;
+  border-style: solid;
+  background: rgba(255, 209, 102, 0.16);
+  box-shadow: 0 0 0 4px rgba(255, 209, 102, 0.45), 0 0 22px rgba(255, 209, 102, 0.55),
+              inset 0 4px 10px rgba(0, 0, 0, 0.55);
+}
+
+.deck-slot.slot-selected .card {
+  transform: translateY(-6px);
+  filter: brightness(1.15);
+}
+
+/* 카드를 집는 동안 슬롯 카드의 툴팁·확대 효과는 끈다 (커서 옆에 잔상처럼 남는다) */
+.deck-slot.slot-selected .card:hover,
+.sticky-clone:hover {
+  transform: translateY(-6px);
+}
+
+.deck-slot.slot-selected .card-tooltip,
+.sticky-clone .card-tooltip {
+  display: none !important;
+}
+
+/* 대체할 슬롯 고르는 중 — 더블클릭 대상 */
+.deck-slot.slot-replaceable {
+  border-color: rgba(255, 152, 0, 0.75);
+  border-style: solid;
+  cursor: pointer;
+  animation: slot-replace-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes slot-replace-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.35); }
+  50%      { box-shadow: 0 0 14px 4px rgba(255, 152, 0, 0.45); }
+}
+
+/* 슬롯 위 안내 배너 */
+.deck-replace-banner {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  border-radius: 10px;
+  background: rgba(20, 12, 0, 0.92);
+  border: 1px solid rgba(255, 152, 0, 0.55);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  z-index: 5;
+}
+
+.deck-replace-banner .replace-card {
+  font-size: 16px;
+  font-weight: 900;
+  color: #ffd166;
+}
+
+.deck-replace-banner .replace-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffe3b0;
 }
 
 .deck-freeze-overlay {
@@ -1078,77 +734,690 @@
 }
 
 .deck-freeze-overlay .material-symbols-outlined {
-  font-size: 44px;
+  font-size: 72px;
   color: #64b5f6;
   opacity: 0.9;
   animation: freeze-spin 3s linear infinite;
-  text-shadow: 0 0 16px rgba(100,181,246,0.8);
+  text-shadow: 0 0 16px rgba(100, 181, 246, 0.8);
 }
 
 .freeze-countdown-text {
   position: absolute;
-  bottom: 4px;
+  bottom: 6px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 12px;
+  font-size: 18px;
   font-weight: 900;
   color: #fff;
-  text-shadow: 0 0 8px rgba(100,181,246,0.9);
+  text-shadow: 0 0 8px rgba(100, 181, 246, 0.9), 0 2px 0 #000;
   letter-spacing: 0.5px;
   pointer-events: none;
 }
 
-.deck-slot {
-  width: 64px;
-  height: 88px;
-  background: rgba(255,255,255,0.03);
-  border: 2px dashed rgba(255,255,255,0.1);
-  border-radius: 8px;
+/* ── 우: 제공 카드 3장 ───────────────────────────────────── */
+.offer-section {
+  justify-self: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  overflow: visible;
+  min-width: 0;
+}
+
+.offer-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  position: relative;
-  transition: border-color var(--transition);
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.section-label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+}
+
+.offer-cards {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  justify-content: flex-end;
+  min-height: 142px;
   overflow: visible;
 }
 
-.deck-slot:empty::after {
-  content: attr(data-slot);
+.offer-placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 15px;
+  white-space: nowrap;
+  align-self: center;
+  padding: 6px 8px;
+}
+
+/* ── 카드 미리보기 인디케이터 ────────────────────────────── */
+.offer-preview-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.offer-preview-indicator.hidden { display: none; }
+
+.offer-spin-icon {
+  font-size: 20px;
+  color: #FFD700;
+  animation: freeze-spin 1.2s linear infinite;
+}
+
+.offer-preview-num {
+  font-size: 16px;
+  font-weight: 800;
+  color: #FFD700;
+  min-width: 12px;
+  text-align: right;
+}
+
+.preview-check-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 76px;
+  color: #4ADE80;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.95));
+  pointer-events: none;
+  z-index: 10;
+}
+
+.deck-full-msg {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ff9800;
+  padding: 4px 10px;
+  background: rgba(255, 152, 0, 0.12);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: 6px;
+  white-space: nowrap;
+  animation: pulse-warn 1.2s infinite alternate;
+  flex-shrink: 0;
+}
+
+@keyframes pulse-warn {
+  from { opacity: 0.7; }
+  to   { opacity: 1; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   필드 중앙 오버레이 / 관전자 수 / 오버타임 문구
+════════════════════════════════════════════════════════════ */
+.field-center-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.spectator-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #90caf9;
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.spectator-eye-icon {
+  font-size: 20px;
+  color: #90caf9;
+}
+
+.overtime-message {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 5rem;
+  font-weight: 900;
+  color: #ffffff;
+  white-space: nowrap;
+  letter-spacing: 4px;
+  opacity: 0;
+  transform: scale(0.3);
+  pointer-events: none;
+  -webkit-text-stroke: 1px #000;
+  text-shadow:
+    -2px  0    0 #000,
+     2px  0    0 #000,
+     0   -2px  0 #000,
+     0    2px  0 #000,
+     2px  4px  0 rgba(0,0,0,0.9),
+     4px  8px  0 rgba(0,0,0,0.6);
+}
+
+.overtime-message.show {
+  animation: go-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ════════════════════════════════════════════════════════════
+   타워 3D 캔버스 — js/towers3d.js가 여기에 석조 건물을 그린다.
+
+   바닥판 위, 타워 DOM 아래에 깔린다. 타일 맵 안이라 맵을 끌거나 확대하면
+   같이 움직이고 같이 커진다. 클릭은 통과시킨다 — 판정은 .tower-block이 한다.
+   WebGL이 없어서 캔버스가 안 생기면 body에 .t3d가 안 붙고, 아래의 기존
+   CSS 타워가 그대로 보인다.
+════════════════════════════════════════════════════════════ */
+.tower3d {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width:  calc(var(--tile) * var(--cols));
+  height: calc(var(--tile) * var(--rows));
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ════════════════════════════════════════════════════════════
+   타워 — 입체 블록 (3D가 못 뜰 때의 대비책)
+════════════════════════════════════════════════════════════ */
+/* 타워는 눕지 않지만, 눕힌 타일의 한가운데에 얹혀야 뜬 것처럼 보이지 않는다.
+   --tilt-dx/--tilt-dy는 board.js alignTowersToGround()가 타일을 실제로 재서 넣어 준다.
+   transform이 아니라 left/top을 옮기는 이유: .tower의 transform은 드래그 강조·피격
+   흔들림·폭발이 이미 쓰고 있어서 덮어쓰면 그 연출들이 깨진다. */
+.tower {
+  position: absolute;
+  left: calc(var(--col) * var(--tile) + var(--tilt-dx, 0px));
+  top:  calc(var(--row) * var(--tile) + var(--tilt-dy, 0px));
+  width:  var(--tile);
+  height: var(--tile);
+  cursor: default;
+  transition: transform 0.15s ease, filter 0.15s ease;
+  overflow: visible;
+  z-index: 3;
+  --tw: var(--tile);
+  --th: var(--tile);
+}
+
+/* 킹 타워도 한 칸 — 왕관 아이콘으로 구분한다 */
+
+/* 한 칸짜리 발자국 — 조준·사거리는 이 상자를 기준으로 잰다.
+   건물의 지붕은 이 위로 솟지만 상자 크기는 건드리지 않는다 (좌표가 틀어지면 안 된다) */
+.tower-block {
+  position: relative;
+  width:  var(--tw);
+  height: var(--th);
+  flex-shrink: 0;
+}
+
+/* 바닥에 닿은 그림자 — 눕힌 바닥 위에 '서 있다'는 느낌의 절반은 이것이 만든다 */
+.tower-block::after {
+  content: '';
+  position: absolute;
+  left: 2%;
+  right: 2%;
+  bottom: -13px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+    rgba(0, 0, 0, 0.62) 0%,
+    rgba(0, 0, 0, 0.34) 52%,
+    rgba(0, 0, 0, 0) 100%);
+  filter: blur(4px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* 건물의 앞면 — 한 칸짜리 발자국 위로 솟는 직육면체 기둥.
+   .tower-block(발자국)은 건드리지 않는다. 조준은 그 상자로 재기 때문에,
+   건물이 아무리 높아져도 맞는 자리는 늘 그 타일 한 칸이다. */
+.tower-body {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 0;
+  height: calc(var(--th) * 1.35);
+  border-radius: 6px 6px 4px 4px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12px;
+  box-sizing: border-box;
+}
+
+/* 층 — 아파트처럼 가로 줄을 넣어야 '기둥'이 아니라 '건물'로 읽힌다.
+   아이콘 아래부터 시작하고, 아래쪽은 체력 숫자가 쓰는 자리라 비워 둔다 */
+.tower-body::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 44%;
+  bottom: 32px;
+  pointer-events: none;
+  background: repeating-linear-gradient(180deg,
+    rgba(255, 255, 255, 0.10) 0px, rgba(255, 255, 255, 0.10) 2px,
+    rgba(0, 0, 0, 0.22)      2px, rgba(0, 0, 0, 0.22)      4px,
+    rgba(0, 0, 0, 0)         4px, rgba(0, 0, 0, 0)        15px);
+}
+
+/* 지붕 — 카메라가 살짝 내려다보므로 윗면이 보인다.
+   먼 쪽(위)이 좁은 사다리꼴이라 바닥의 원근과 방향이 맞는다 */
+.tower-body::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  top: -19px;
+  height: 23px;
+  clip-path: polygon(10% 0%, 90% 0%, 100% 90%, 100% 100%, 0% 100%, 0% 90%);
+  pointer-events: none;
+}
+
+
+/* 내 타워 — 파란색 */
+/* 내 타워 — 파란 건물. 아래로 층층이 쌓은 그림자가 '두께'를 만든다 */
+.my-tower .tower-body {
+  background: linear-gradient(160deg, #4b92f0 0%, #2461c6 46%, #143f8c 100%);
+  border: 3px solid #6aa7ff;
+  box-shadow:
+    0 5px 0 #2158b4,
+    0 10px 0 #17418c,
+    0 15px 0 #0e2c63,
+    0 20px 0 #071a3d,
+    0 22px 0 rgba(0, 0, 0, 0.55),
+    0 26px 28px rgba(0, 0, 0, 0.6),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4),
+    inset 3px 0 0 rgba(255, 255, 255, 0.13),
+    inset -3px 0 0 rgba(0, 0, 0, 0.24),
+    inset 0 -8px 14px rgba(0, 0, 0, 0.32);
+}
+.my-tower .tower-body::before {
+  background: linear-gradient(180deg, #8fc2ff 0%, #5b98ec 55%, #3b78d0 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45), 0 2px 0 rgba(10, 35, 80, 0.85);
+}
+
+/* 킹 타워 — 더 높은 건물처럼 지붕을 키우고 금빛 테를 두른다 */
+.my-tower.king-tower .tower-body {
+  background: linear-gradient(160deg, #5a9eff 0%, #1f58cc 46%, #0e3585 100%);
+  border-color: #8cbcff;
+  box-shadow:
+    0 6px 0 #1d51ab,
+    0 12px 0 #123a82,
+    0 18px 0 #0a2558,
+    0 24px 0 #061434,
+    0 26px 0 rgba(0, 0, 0, 0.55),
+    0 30px 32px rgba(0, 0, 0, 0.62),
+    0 0 26px rgba(60, 130, 255, 0.3),
+    inset 0 2px 0 rgba(255, 255, 255, 0.45),
+    inset 3px 0 0 rgba(255, 255, 255, 0.15),
+    inset -3px 0 0 rgba(0, 0, 0, 0.26),
+    inset 0 -8px 14px rgba(0, 0, 0, 0.32);
+}
+/* 킹 타워 — 더 높고 굵은 기둥 */
+.my-tower.king-tower .tower-body,
+.enemy-tower.king-tower .tower-body {
+  left: 3%;
+  right: 3%;
+  height: calc(var(--th) * 1.58);
+  padding-top: 14px;
+}
+.king-tower .tower-body::before {
+  left: -6px;
+  right: -6px;
+  top: -25px;
+  height: 29px;
+}
+.my-tower.king-tower .tower-body::before {
+  background: linear-gradient(180deg, #a8d2ff 0%, #6aa4f2 55%, #3f7ed6 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.5),
+    0 2px 0 rgba(255, 214, 110, 0.75),
+    0 4px 0 rgba(8, 30, 70, 0.9);
+}
+
+/* 적 타워 — 빨간색 */
+/* 적 타워 — 빨간 건물 */
+.enemy-tower .tower-body {
+  background: linear-gradient(160deg, #ef5555 0%, #bd1e1e 46%, #820e0e 100%);
+  border: 3px solid #ff7070;
+  box-shadow:
+    0 5px 0 #9c1616,
+    0 10px 0 #780e0e,
+    0 15px 0 #560808,
+    0 20px 0 #330303,
+    0 22px 0 rgba(0, 0, 0, 0.55),
+    0 26px 28px rgba(0, 0, 0, 0.6),
+    inset 0 2px 0 rgba(255, 255, 255, 0.34),
+    inset 3px 0 0 rgba(255, 255, 255, 0.12),
+    inset -3px 0 0 rgba(0, 0, 0, 0.26),
+    inset 0 -8px 14px rgba(0, 0, 0, 0.32);
+}
+.enemy-tower .tower-body::before {
+  background: linear-gradient(180deg, #ff9b9b 0%, #e35a5a 55%, #c23636 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), 0 2px 0 rgba(60, 5, 5, 0.85);
+}
+
+.enemy-tower.king-tower .tower-body {
+  background: linear-gradient(160deg, #ff6666 0%, #b01515 46%, #6a0606 100%);
+  border-color: #ff8f8f;
+  box-shadow:
+    0 6px 0 #911313,
+    0 12px 0 #6c0c0c,
+    0 18px 0 #480606,
+    0 24px 0 #2a0202,
+    0 26px 0 rgba(0, 0, 0, 0.55),
+    0 30px 32px rgba(0, 0, 0, 0.62),
+    0 0 26px rgba(255, 60, 60, 0.3),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4),
+    inset 3px 0 0 rgba(255, 255, 255, 0.14),
+    inset -3px 0 0 rgba(0, 0, 0, 0.28),
+    inset 0 -8px 14px rgba(0, 0, 0, 0.32);
+}
+.enemy-tower.king-tower .tower-body::before {
+  background: linear-gradient(180deg, #ffb3b3 0%, #ec6a6a 55%, #cf4040 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.45),
+    0 2px 0 rgba(255, 214, 110, 0.75),
+    0 4px 0 rgba(50, 4, 4, 0.9);
+}
+
+.tower-icon {
+  position: relative;
+  z-index: 1;
+  font-size: 42px;
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  user-select: none;
+}
+
+.king-tower .tower-icon {
+  font-size: 58px;
+  color: rgba(255, 230, 100, 0.95);
+}
+
+/* ── 드래그 오버 ──────────────────────────────────────── */
+.tower.drag-over,
+.tower.drag-over-heal {
+  transform: scale(1.08) translateY(-3px);
+}
+.tower.drag-over .tower-body {
+  filter: brightness(1.5) saturate(1.3);
+  outline: 3px solid rgba(233, 69, 96, 0.95);
+  outline-offset: 4px;
+}
+.tower.drag-over-heal .tower-body {
+  filter: brightness(1.5) saturate(1.3);
+  outline: 3px solid rgba(76, 175, 80, 0.95);
+  outline-offset: 4px;
+}
+
+/* ── 파괴된 타워 ──────────────────────────────────────── */
+.tower.destroyed {
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* ── 상태 배지 공통 (방어·악몽·낙인·반사·힐감소) ─────────── */
+.tower-defense-badge,
+.tower-nightmare-badge,
+.tower-doom-seal-badge,
+.tower-mirror-badge,
+.tower-heal-reduction-badge {
+  visibility: hidden;
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.tower-defense-badge {
+  bottom: -10px; right: -10px;
+  font-size: 20px;
+  color: #64b5f6;
+  background: rgba(18, 18, 28, 0.9);
+  animation: defense-pulse 1.2s infinite alternate;
+}
+.tower.has-defense .tower-defense-badge { visibility: visible; }
+
+@keyframes defense-pulse {
+  from { box-shadow: 0 0 4px rgba(100,181,246,0.5); }
+  to   { box-shadow: 0 0 12px rgba(100,181,246,0.95); }
+}
+
+.tower-nightmare-badge {
+  bottom: -10px; left: -10px;
   font-size: 18px;
-  color: rgba(255,255,255,0.05);
+  background: rgba(18, 12, 28, 0.9);
+  animation: nightmare-pulse 1.0s infinite alternate;
+}
+.tower.has-nightmare .tower-nightmare-badge { visibility: visible; }
+
+@keyframes nightmare-pulse {
+  from { box-shadow: 0 0 4px rgba(233,69,96,0.5); }
+  to   { box-shadow: 0 0 12px rgba(233,69,96,0.95); }
+}
+
+.tower-doom-seal-badge {
+  bottom: -10px; right: -10px;
+  font-size: 18px;
+  background: rgba(18, 12, 28, 0.9);
+  animation: doom-seal-pulse 1.0s infinite alternate;
+}
+.tower.has-doom-seal .tower-doom-seal-badge { visibility: visible; }
+
+@keyframes doom-seal-pulse {
+  from { box-shadow: 0 0 4px rgba(255,160,0,0.5); }
+  to   { box-shadow: 0 0 12px rgba(255,160,0,0.95); }
+}
+
+.tower-mirror-badge {
+  top: -10px; left: -10px;
+  font-size: 20px;
+  background: rgba(200, 230, 255, 0.18);
+  animation: mirror-pulse 1.2s infinite alternate;
+}
+.tower.has-mirror .tower-mirror-badge { visibility: visible; }
+
+@keyframes mirror-pulse {
+  from { filter: drop-shadow(0 0 3px rgba(180,220,255,0.6)); }
+  to   { filter: drop-shadow(0 0 9px rgba(180,220,255,1.0)); }
+}
+
+.tower-heal-reduction-badge {
+  top: -10px; right: -10px;
+  font-size: 18px;
+  background: rgba(0, 0, 0, 0.5);
+}
+.tower.has-heal-reduction .tower-heal-reduction-badge { visibility: visible; }
+
+/* ════════════════════════════════════════════════════════════
+   빌보드 HP UI (타워 위에 부유)
+════════════════════════════════════════════════════════════ */
+/* ── 체력 표시 — 타일 맵에 맞춰 숫자 하나만 ──────────────
+   바도 최대치도 없이 남은 체력만. 글자 모양은 카드 개수 표시와 같다.
+   아이콘은 타일 한가운데라 숫자를 아래쪽에 걸쳐 덜 가리게 한다 */
+.tower-hp {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+  color: #ffffff;
+  -webkit-text-stroke: 3px #000;
+  paint-order: stroke fill;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.85);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  user-select: none;
+  z-index: 26;
+}
+
+/* 보호막이 남아 있으면 그 수치를 하늘색으로 — 여전히 숫자 하나 */
+.tower-hp.shielded { color: #8fe3ff; }
+
+/* 부서진 타워는 숫자를 숨긴다 */
+.tower.destroyed .tower-hp { display: none; }
+
+/* ════════════════════════════════════════════════════════════
+   말풍선 — 킹 타워 옆 (필드 중앙 방향)
+════════════════════════════════════════════════════════════ */
+.speech-bubble {
+  position: absolute;
+  top: 50%;
+  background: rgba(18, 18, 28, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-radius: 14px;
+  padding: 8px 14px;
+  font-size: 28px;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  width: max-content;
+  max-width: 220px;
+  white-space: nowrap;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  transform: translateY(-50%) scale(0.8);
+}
+
+.speech-bubble.visible {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+/* 이전 말풍선은 새 말풍선 위로 밀려 올라감 */
+.speech-bubble.upper-bubble {
+  font-size: 22px;
+  transform: translateY(-165%) scale(0.75);
+}
+
+.speech-bubble.upper-bubble.visible {
+  opacity: 0.8;
+  transform: translateY(-165%) scale(0.9);
+}
+
+/* 내 킹 — 오른쪽(필드 중앙)에 표시, 꼬리는 왼쪽 */
+.my-tower.king-tower .speech-bubble {
+  left: calc(100% + 22px);
+  transform-origin: left center;
+}
+.my-tower.king-tower .speech-bubble::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
+  border: 8px solid transparent;
+  border-right-color: rgba(18, 18, 28, 0.97);
+}
+
+/* 적 킹 — 왼쪽(필드 중앙)에 표시, 꼬리는 오른쪽 */
+.enemy-tower.king-tower .speech-bubble {
+  right: calc(100% + 22px);
+  transform-origin: right center;
+}
+.enemy-tower.king-tower .speech-bubble::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  border: 8px solid transparent;
+  border-left-color: rgba(18, 18, 28, 0.97);
+}
+
+.speech-bubble.upper-bubble::after { display: none; }
+
+/* ── DOT 인디케이터 — 필드 중앙 방향에 표시 ─────────────── */
+.dot-indicator {
+  position: absolute;
+  top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  z-index: 10;
+}
+
+.my-tower    .dot-indicator { left: calc(100% + 10px); }
+.enemy-tower .dot-indicator { right: calc(100% + 10px); }
+
+.dot-badge {
+  font-size: 16px;
+  line-height: 1;
+  animation: dot-pulse 0.8s infinite alternate;
+}
+.dot-badge .material-symbols-outlined {
+  font-size: 22px;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+@keyframes dot-pulse {
+  from { transform: scale(1); }
+  to   { transform: scale(1.25); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   이펙트 레이어 — 스테이지 내부 (함께 스케일됨)
+════════════════════════════════════════════════════════════ */
+.fx-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 60;
 }
 
 /* ════════════════════════════════════════════════════════════
    관전 모드
 ════════════════════════════════════════════════════════════ */
 #screen-game.spectator-mode .offer-section {
-  display: none;
+  visibility: hidden;
 }
 
-#screen-game.spectator-mode .game-map {
-  pointer-events: none;
-}
-
+/* 관전자도 맵을 끌고(왼쪽·가운데 버튼) 휠로 확대·축소한다.
+   예전엔 맵 전체를 pointer-events: none으로 막아 둔 탓에 보고 싶은 곳을 볼 수 없었다.
+   카드를 들 수는 없으므로(덱 자리가 관전용 두 줄로 바뀜다) 누르는 것은 끌기뿐이다 */
+#screen-game.spectator-mode .map-viewport { cursor: grab; }
+#screen-game.spectator-mode .map-viewport.panning { cursor: grabbing; }
+#screen-game.spectator-mode .tower { cursor: inherit; }
 
 /* ── 관전자 덱 2행 ─────────────────────────────────── */
 .spec-deck-section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 4px 0;
+  gap: 8px;
 }
 
 .spec-deck-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .spec-deck-label {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
-  color: rgba(255,255,255,0.45);
-  width: 38px;
+  color: rgba(255, 255, 255, 0.55);
+  width: 64px;
   flex-shrink: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -1158,20 +1427,16 @@
 
 .spec-deck-slots {
   display: flex;
-  gap: 6px;
+  gap: 10px;
 }
 
 .spec-deck-slots .deck-slot {
-  width: 56px;
-  height: 78px;
+  width: 64px;
+  height: 88px;
+  border-radius: 8px;
 }
 
-.spec-deck-slots .card {
-  width: 56px !important;
-  height: 78px !important;
-  cursor: default !important;
-  pointer-events: none;
-}
+.spec-deck-slots .deck-slot::before { content: none; }
 
 /* ════════════════════════════════════════════════════════════
    결과 화면
@@ -1179,23 +1444,33 @@
 .result-card {
   background: var(--bg-surface);
   border-radius: 20px;
-  padding: 36px 48px;
+  padding: 40px 52px;
   text-align: center;
   box-shadow: var(--shadow);
-  max-width: 560px;
+  max-width: 660px;
   width: 90%;
 }
 
 .result-icon  { font-size: 56px; margin-bottom: 10px; }
 
 .result-title {
-  font-size: 32px;
+  font-size: 38px;
   font-weight: 900;
   margin-bottom: 0;
   line-height: 1.1;
 }
 
 .result-title.win  { color: #ffd700; text-shadow: 0 0 20px rgba(255,215,0,0.5); }
+
+/* 결과 제목 아래 한 줄 — 기권승·기권패 이유 (win.js winSetReason) */
+.result-reason {
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffcf8a;
+  letter-spacing: 0.02em;
+}
+.result-reason.hidden { display: none; }
 .result-title.lose { color: #9e9e9e; }
 
 .result-stats-wrap {
@@ -1211,12 +1486,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 12px;
 }
 
 .result-col-label {
   width: 100%;
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 800;
   padding: 5px 10px;
   border-radius: 8px;
@@ -1251,42 +1526,42 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  font-size: 15px;
-  font-weight: 700;
+  gap: 10px;
+  font-size: 24px;
+  font-weight: 800;
   color: var(--text-primary);
 }
 
 .result-stat-icon {
-  font-size: 18px;
+  font-size: 28px;
   color: rgba(255,255,255,0.45);
   flex-shrink: 0;
 }
 
 .result-vs {
-  font-size: 13px;
+  font-size: 18px;
   font-weight: 900;
   color: rgba(255,255,255,0.3);
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  padding-top: 28px;
+  padding-top: 34px;
 }
 
-/* ── 매치 타이머 (맵 중앙 오버레이 내) ───────────────────── */
+/* ── 매치 타이머 (상단 바 중앙) ──────────────────────────── */
 .match-timer-wrap {
   display: flex;
   align-items: center;
-  gap: 5px;
-  background: rgba(10, 10, 22, 0.75);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 20px;
-  padding: 4px 14px 4px 10px;
-  backdrop-filter: blur(6px);
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 30px;
+  padding: 6px 24px 6px 16px;
+  white-space: nowrap;
 }
 
 .timer-icon-inline {
-  font-size: 17px;
+  font-size: 34px;
   color: #94A3B8;
   flex-shrink: 0;
   transition: color 0.5s;
@@ -1294,9 +1569,10 @@
 
 .match-timer-display {
   font-family: 'Black Han Sans', sans-serif;
-  font-size: 1.15rem;
+  font-size: 2.75rem;
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
+  line-height: 1;
   color: #ffffff;
   font-variant-numeric: tabular-nums;
   -webkit-text-stroke: 1px #000;
@@ -1325,18 +1601,10 @@
   transition: background 0.3s;
 }
 
-/* ── 오버타임 텍스트 스타일 오버라이드 (흰색, 줄바꿈 방지) ─── */
-.go-text.overtime-mode {
-  color: #ffffff;
-  font-size: 3rem;
-  letter-spacing: 3px;
-  white-space: nowrap;
-}
-
 /* ── 매치종료 텍스트 (줄바꿈 방지) ──────────────────────────── */
 .ready-text.match-end-mode {
   color: #ffffff;
-  font-size: 3rem;
+  font-size: 5rem;
   letter-spacing: 3px;
   white-space: nowrap;
 }
@@ -1345,7 +1613,7 @@
 .countdown-display {
   display: none;
   font-family: 'Black Han Sans', sans-serif;
-  font-size: 2.8rem;
+  font-size: 2.75rem;
   font-weight: 900;
   color: #ffffff;
   line-height: 1;
@@ -1363,13 +1631,6 @@
 }
 .countdown-display.pop {
   animation: go-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-/* 카운트다운 중 타이머 pill 배경 숨김 */
-.match-timer-wrap.counting-down {
-  background: transparent;
-  border-color: transparent;
-  backdrop-filter: none;
 }
 
 /* ── READY / GO 오버레이 ─────────────────────────────────── */
@@ -1393,36 +1654,39 @@
 
 .ready-text {
   position: absolute;
-  font-size: 3.5rem;
+  font-size: 6rem;
   font-weight: 900;
   color: #fff;
   text-shadow: 0 2px 20px rgba(99,179,237,0.9), 0 0 50px rgba(99,179,237,0.4);
-  letter-spacing: 6px;
+  letter-spacing: 8px;
+  white-space: nowrap;
   opacity: 0;
-  transform: translateX(-320px);
+  transform: translateX(-520px);
 }
 .ready-text.slide-in  { animation: ready-slide-in  0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 .ready-text.slide-out { animation: ready-slide-out 0.3s  ease-in                          forwards; }
 @keyframes ready-slide-in {
-  from { opacity: 0; transform: translateX(-320px); }
+  from { opacity: 0; transform: translateX(-520px); }
   to   { opacity: 1; transform: translateX(0);      }
 }
 @keyframes ready-slide-out {
   from { opacity: 1; transform: translateX(0);      }
-  to   { opacity: 0; transform: translateX(320px);  }
+  to   { opacity: 0; transform: translateX(520px);  }
 }
 
 .go-text {
   position: absolute;
-  font-size: 5rem;
+  font-size: 8rem;
   font-weight: 900;
   color: #FFD700;
+  white-space: nowrap;
   text-shadow: 0 2px 24px rgba(255,215,0,0.9), 0 0 60px rgba(255,215,0,0.45);
   letter-spacing: 6px;
   opacity: 0;
   transform: scale(0.3);
 }
 .go-text.pop { animation: go-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.go-text.countdown-mode { font-size: 7rem; color: #ffffff; }
 @keyframes go-pop {
   0%   { opacity: 0; transform: scale(0.3);  }
   40%  { opacity: 1; transform: scale(1.25); }
@@ -1447,8 +1711,8 @@
 
 /* ── 반사 경고 아이콘 ─────────────────────────────────────── */
 .mirror-warning-icon {
-  position: fixed;
-  font-size: 2rem;
+  position: absolute;
+  font-size: 3rem;
   line-height: 1;
   pointer-events: none;
   z-index: 9999;
@@ -1469,4 +1733,156 @@
 @keyframes mirror-warn-fadeout {
   from { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
   to   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+}
+
+/* ── 개발자 도구 카드 검색기 (js/dev.js) ───────────────────
+   닉네임 뒤에 '#Dev'를 붙이면 카드 선택 UI 자리에 나타난다 */
+.dev-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 320px;
+  min-height: 142px;
+}
+
+.dev-card-search {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(10, 14, 26, 0.85);
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+}
+
+.dev-card-search:focus {
+  border-color: rgba(120, 200, 255, 0.8);
+  box-shadow: 0 0 8px rgba(120, 200, 255, 0.35);
+}
+
+.dev-card-results {
+  max-height: 176px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-right: 3px;
+}
+
+.dev-card-results::-webkit-scrollbar { width: 7px; }
+.dev-card-results::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 4px; }
+
+.dev-card-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border-left: 4px solid rgba(255, 255, 255, 0.35);
+  background: rgba(20, 26, 42, 0.85);
+  color: #e8eefc;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dev-card-row:hover { background: rgba(48, 62, 96, 0.95); }
+
+/* 등급 색 (cards.css와 같은 색) */
+.dev-card-row.grade-common    { border-left-color: #b9bec7; }
+.dev-card-row.grade-rare      { border-left-color: var(--grade-rare); }
+.dev-card-row.grade-epic      { border-left-color: #b04bd0; }
+.dev-card-row.grade-mythic    { border-left-color: var(--grade-mythic); }
+.dev-card-row.grade-legendary { border-left-color: var(--grade-legendary); }
+.dev-card-row.grade-secret    { border-left-color: #7a7a7a; }
+
+.dev-card-icon { font-size: 16px; }
+.dev-card-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.dev-card-cost { opacity: 0.8; font-size: 12px; }
+
+.dev-card-none {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 13px;
+  padding: 6px 4px;
+}
+
+/* 덱에 넣은 순간 한 번 깜빡 */
+.dev-card-row.dev-card-added { animation: dev-card-added 0.45s ease-out; }
+
+@keyframes dev-card-added {
+  0%   { background: rgba(120, 220, 160, 0.9); }
+  100% { background: rgba(20, 26, 42, 0.85); }
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   3D 타워가 떴을 때 (body.t3d) — CSS 상자는 비우고 자리만 남긴다
+   ════════════════════════════════════════════════════════════
+   .tower-block(한 칸)은 그대로 둔다. 조준·사거리·드롭 판정이 전부 그 상자를
+   재서 돌아가기 때문이다. 지우는 건 '보이는 것'뿐이다.
+
+   건물의 발은 칸의 한가운데(50%)에 선다 — 바닥 위에 놓인 물건이니까.
+   그래서 .tower-body는 가운데에서 위로 솟은 '클릭 판'으로만 남긴다.
+   (안 그러면 눈에 보이는 건물을 눌러도 아무 일이 없다)
+════════════════════════════════════════════════════════════ */
+/* `.tower` 를 한 겹 더 쓰는 건 멋이 아니라 우선순위 때문이다 —
+   위의 `.my-tower.king-tower .tower-body` 를 이겨야 배경이 실제로 지워진다 */
+/* 누르는 판 — 건물이 화면에서 차지하는 네모에 정확히 맞춘다.
+   --hit-* 는 towers3d.js가 3D 경계 상자를 투영해서 넣어 준다 (칸 한가운데 = 건물의 발 기준).
+   덕분에 지붕이든 벽이든 보이는 곳을 누르면 그대로 잡힌다.
+   사거리·조준 계산은 그대로 .tower-block(한 칸)이 한다 — 여긴 '집는 판'일 뿐이다. */
+body.t3d .tower .tower-body {
+  background: none;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  left:   calc(50% + var(--hit-l, -38px));
+  right:  auto;
+  width:  var(--hit-w, 76px);
+  top:    auto;
+  bottom: calc(50% - var(--hit-below, 0px));
+  height: var(--hit-h, 116px);
+}
+body.t3d .tower .tower-body::before,
+body.t3d .tower .tower-body::after,
+body.t3d .tower .tower-icon { display: none; }
+
+/* 접지 그림자 — 건물의 발은 칸의 한가운데에 선다.
+   3D 쪽에서 그리지 않고 여기서 그리는 이유: 눕힌 바닥과 같은 평면에 있어야
+   자연스러운데, 3D 카메라는 바닥과 각도가 다르기 때문이다. */
+body.t3d .tower .tower-block::after {
+  left: 17%;
+  right: 17%;
+  top: 50%;
+  bottom: auto;
+  height: 22px;
+  margin-top: -10px;
+  background: radial-gradient(ellipse at center,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.28) 55%,
+    rgba(0, 0, 0, 0) 100%);
+  filter: blur(3px);
+}
+body.t3d .tower.king-tower .tower-block::after {
+  left: 10%;
+  right: 10%;
+  height: 26px;
+  margin-top: -12px;
+}
+
+/* 킹 타워도 같은 --hit-* 를 쓴다 — 따로 잡아 줄 것이 없다 */
+
+/* 조준 강조는 three.js가 입체물에 직접 테두리를 두른다 (_t3dBuildOutline).
+   네모난 CSS 아웃라인은 건물 모양과 안 맞아서 오히려 어긋나 보이므로 끈다. */
+body.t3d .tower.drag-over .tower-body,
+body.t3d .tower.drag-over-heal .tower-body {
+  filter: none;
+  outline: none;
+}
+
+/* 체력 숫자는 지붕 위로 — --hp-up은 towers3d.js가 건물 높이를 재서 넣는다 */
+body.t3d .tower-hp {
+  bottom: calc(50% + var(--hp-up, 150px));
 }

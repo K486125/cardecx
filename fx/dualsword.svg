@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  듀얼 검(dual_sword) — cards.js의 cast: 'dualsword'
+  기준점(타워 중심) = (700, 210) · 전체 길이 1.4초
+
+  0 ~ 0.5초  돌진: 칼날 두 자루가 위아래로 벌어진 채 나타나 가속해 들어오고,
+             타워에서 교차하며 멈춘다(히트스톱). 교차 순간 X자 섬광 + 파편. 피해 20
+  0.5 ~ 0.8  / 베기 (왼쪽 아래 → 오른쪽 위)  피해 12
+  0.8 ~ 1.1  \ 베기 (오른쪽 아래 → 왼쪽 위)  피해 12
+
+  '도형'처럼 보이지 않게 하는 세 가지 (fx/sword.svg와 같은 방식):
+   1) #tear  — feTurbulence + feDisplacementMap으로 테두리를 찢는다
+   2) 3층 밝기 — 새하얀 심지 / 색이 있는 테두리 / 번지는 빛
+   3) 진행 방향 모션블러 + 뒤로 끌리는 잔상
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420" width="1000" height="420">
+  <defs>
+    <!-- 칼날 3층: 밝기가 호를 따라 흐르도록 세로 그라데이션 -->
+    <linearGradient id="dCore" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="24%"  stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="52%"  stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="80%"  stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="dRim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#9fd8ff" stop-opacity="0"/>
+      <stop offset="28%"  stop-color="#e6f5ff" stop-opacity="0.8"/>
+      <stop offset="55%"  stop-color="#f2fbff" stop-opacity="0.95"/>
+      <stop offset="82%"  stop-color="#9fd8ff" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#7cc4ff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="dHalo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#5fb4ff" stop-opacity="0"/>
+      <stop offset="50%"  stop-color="#79c8ff" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#5fb4ff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="dTrail" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#9fd4ff" stop-opacity="0"/>
+      <stop offset="45%"  stop-color="#bfe4ff" stop-opacity="0.16"/>
+      <stop offset="80%"  stop-color="#dff1ff" stop-opacity="0.42"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.85"/>
+    </linearGradient>
+    <linearGradient id="dCut" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="18%"  stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="52%"  stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="82%"  stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="dCutHalo" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#5fb4ff" stop-opacity="0"/>
+      <stop offset="50%"  stop-color="#79c8ff" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#5fb4ff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="dFlash">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="38%"  stop-color="#d9efff" stop-opacity="0.45"/>
+      <stop offset="72%"  stop-color="#7cc4ff" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- 테두리를 불규칙하게 찢는다 -->
+    <filter id="tear" x="-90%" y="-90%" width="280%" height="280%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.016 0.06" numOctaves="3" seed="11" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="10" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <!-- 잔상 — 결이 지고 진행 방향으로 길게 번진다 -->
+    <filter id="trailFx" x="-90%" y="-90%" width="280%" height="280%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.12" numOctaves="2" seed="29" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="13" xChannelSelector="R" yChannelSelector="G"/>
+      <feGaussianBlur stdDeviation="5 1.2"/>
+    </filter>
+    <filter id="halo" x="-90%" y="-90%" width="280%" height="280%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <!-- 진행 방향(가로)으로만 번지는 모션블러 -->
+    <filter id="smear" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="3 0.7"/>
+    </filter>
+
+    <!-- 칼날 한 자루: 진행 방향으로 볼록한 초승달(3층) + 뒤로 끌리는 쐐기 잔상 -->
+    <g id="dSword">
+      <polygon points="726,193 726,227 436,210" fill="url(#dTrail)" filter="url(#trailFx)"/>
+      <path d="M 765.4 151.1 A 88 88 0 0 1 765.4 268.9" fill="none"
+            stroke="url(#dHalo)" stroke-width="34" stroke-linecap="round" filter="url(#halo)"/>
+      <path d="M 765.4 151.1 A 88 88 0 0 1 765.4 268.9" fill="none"
+            stroke="url(#dRim)" stroke-width="15" stroke-linecap="round" filter="url(#smear)"/>
+      <path d="M 765.4 151.1 A 88 88 0 0 1 765.4 268.9" fill="none"
+            stroke="url(#dCore)" stroke-width="5.5" stroke-linecap="round"/>
+    </g>
+  </defs>
+
+  <style>
+    .dash-a, .dash-b, .sparks, .crossflash, .flash { transform-box: view-box; }
+
+    /* 두 자루가 위아래로 벌어진 채 나타나 가속해 들어오고, 교차한 자리에서 멈춘다.
+       마지막 70ms를 같은 자리에 붙잡아 두는 것이 '히트스톱' — 부딪힌 느낌을 만든다 */
+    .dash-a { animation: dash-a 0.5s cubic-bezier(0.55, 0, 0.85, 0.35) both; }
+    .dash-b { animation: dash-b 0.5s cubic-bezier(0.55, 0, 0.85, 0.35) both; }
+
+    @keyframes dash-a {
+      0%   { transform: translate(-330px, -112px); opacity: 0; }
+      14%  { opacity: 1; }
+      86%  { transform: translate(12px, 9px);      opacity: 1; }
+      100% { transform: translate(12px, 9px);      opacity: 0; }
+    }
+    @keyframes dash-b {
+      0%   { transform: translate(-330px, 112px);  opacity: 0; }
+      14%  { opacity: 1; }
+      86%  { transform: translate(12px, -9px);     opacity: 1; }
+      100% { transform: translate(12px, -9px);     opacity: 0; }
+    }
+
+    /* 교차 순간 — X자로 터지는 섬광과 사방으로 튀는 파편 */
+    .crossflash {
+      transform-origin: 700px 210px;
+      animation: crossflash 0.2s ease-out 0.42s both;
+    }
+    @keyframes crossflash {
+      0%   { transform: scale(0.35); opacity: 0; }
+      35%  { transform: scale(1);    opacity: 1; }
+      100% { transform: scale(1.18); opacity: 0; }
+    }
+
+    .sparks {
+      transform-origin: 700px 210px;
+      animation: sparks 0.26s cubic-bezier(0.1, 0.8, 0.3, 1) 0.43s both;
+    }
+    @keyframes sparks {
+      0%   { transform: scale(0.25); opacity: 0; }
+      25%  { opacity: 1; }
+      100% { transform: scale(1.35); opacity: 0; }
+    }
+
+    /* X자 베기 — 그어지는 방향이 보이도록 한쪽 끝에서부터 드러난다 */
+    .xcut-a { animation: reveal 0.3s ease-out 0.5s both; }
+    .xcut-b { animation: reveal 0.3s ease-out 0.8s both; }
+
+    @keyframes reveal {
+      0%   { clip-path: inset(0 100% 0 0); opacity: 0; }
+      20%  { opacity: 0.9; }
+      68%  { clip-path: inset(0 0 0 0);    opacity: 0.95; }
+      100% { clip-path: inset(0 0 0 0);    opacity: 0; }
+    }
+
+    /* 베기가 꽂히는 순간의 섬광 */
+    .flash { transform-origin: 700px 210px; animation: flash 0.16s ease-out both; }
+    .flash-2 { animation-delay: 0.76s; }
+    .flash-3 { animation-delay: 1.06s; }
+    @keyframes flash {
+      0%   { transform: scale(0.7);  opacity: 0; }
+      40%  { transform: scale(1);    opacity: 0.9; }
+      100% { transform: scale(1.05); opacity: 0; }
+    }
+  </style>
+
+  <!-- 위에서 내려꽂는 칼 (진행 방향으로 기울어져 있다) -->
+  <g class="dash-a"><g transform="rotate(18 700 210)" filter="url(#tear)"><use href="#dSword"/></g></g>
+  <!-- 아래에서 올려치는 칼 -->
+  <g class="dash-b"><g transform="rotate(-18 700 210)" filter="url(#tear)"><use href="#dSword"/></g></g>
+
+  <!-- 교차 섬광 (두 칼날이 지나간 방향으로 뻗는 X) -->
+  <g class="crossflash">
+    <g filter="url(#tear)">
+      <g transform="rotate(18 700 210)">
+        <rect x="586" y="198" width="228" height="24" rx="12" fill="url(#dCutHalo)" filter="url(#halo)"/>
+        <rect x="590" y="205" width="220" height="10" rx="5" fill="url(#dCut)" filter="url(#smear)"/>
+        <rect x="600" y="208.2" width="200" height="3.6" rx="1.8" fill="#ffffff"/>
+      </g>
+      <g transform="rotate(-18 700 210)">
+        <rect x="586" y="198" width="228" height="24" rx="12" fill="url(#dCutHalo)" filter="url(#halo)"/>
+        <rect x="590" y="205" width="220" height="10" rx="5" fill="url(#dCut)" filter="url(#smear)"/>
+        <rect x="600" y="208.2" width="200" height="3.6" rx="1.8" fill="#ffffff"/>
+      </g>
+    </g>
+    <circle cx="700" cy="210" r="52" fill="url(#dFlash)"/>
+  </g>
+
+  <!-- 부딪히며 튀는 파편 — 굵기·길이가 제각각이라야 파편처럼 보인다 -->
+  <g class="sparks" stroke="#ffffff" stroke-linecap="round" filter="url(#halo)">
+    <line x1="724" y1="210" x2="784" y2="210" stroke-width="3.4" transform="rotate(-14 700 210)"/>
+    <line x1="722" y1="210" x2="756" y2="210" stroke-width="1.7" transform="rotate(26 700 210)"/>
+    <line x1="724" y1="210" x2="772" y2="210" stroke-width="2.6" transform="rotate(62 700 210)"/>
+    <line x1="722" y1="210" x2="750" y2="210" stroke-width="1.5" transform="rotate(112 700 210)"/>
+    <line x1="724" y1="210" x2="776" y2="210" stroke-width="3" transform="rotate(158 700 210)"/>
+    <line x1="722" y1="210" x2="752" y2="210" stroke-width="1.6" transform="rotate(202 700 210)"/>
+    <line x1="724" y1="210" x2="766" y2="210" stroke-width="2.2" transform="rotate(248 700 210)"/>
+    <line x1="722" y1="210" x2="758" y2="210" stroke-width="1.9" transform="rotate(298 700 210)"/>
+  </g>
+
+  <!-- / 베기 — 왼쪽 아래에서 오른쪽 위로 (3층) -->
+  <g transform="rotate(-45 700 210)">
+    <g class="xcut-a" filter="url(#tear)">
+      <rect x="583" y="198" width="234" height="24" rx="12" fill="url(#dCutHalo)" filter="url(#halo)"/>
+      <rect x="585" y="205.5" width="230" height="9" rx="4.5" fill="url(#dCut)" filter="url(#smear)"/>
+      <rect x="596" y="208.4" width="208" height="3.2" rx="1.6" fill="#ffffff"/>
+    </g>
+  </g>
+  <circle class="flash flash-2" cx="700" cy="210" r="45" fill="url(#dFlash)"/>
+
+  <!-- \ 베기 — 오른쪽 아래에서 왼쪽 위로 (3층) -->
+  <g transform="rotate(-135 700 210)">
+    <g class="xcut-b" filter="url(#tear)">
+      <rect x="583" y="198" width="234" height="24" rx="12" fill="url(#dCutHalo)" filter="url(#halo)"/>
+      <rect x="585" y="205.5" width="230" height="9" rx="4.5" fill="url(#dCut)" filter="url(#smear)"/>
+      <rect x="596" y="208.4" width="208" height="3.2" rx="1.6" fill="#ffffff"/>
+    </g>
+  </g>
+  <circle class="flash flash-3" cx="700" cy="210" r="45" fill="url(#dFlash)"/>
+</svg>

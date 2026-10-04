@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  돌(rock) — 날아가는 돌덩이. cards.js의 cast: 'stone' 중 '비행' 부분.
+  기준점(돌 중심) = (110, 110)
+
+  다른 연출과 달리 이 파일에는 '날아가는 궤적'이 없다.
+  던지는 시간이 차징에 따라 1.0초~2.5초로 달라지기 때문에, 궤적은 board.js가
+  Web Animations API로 그린다(포물선 + 지속시간). 이 파일은 그 위에 얹히는
+  '돌 자체'만 그리고, 회전은 무한 반복이라 어떤 비행 시간에도 맞는다.
+
+  도형처럼 보이지 않게 하는 것:
+   1) #chip   — feTurbulence + feDisplacementMap으로 돌 테두리를 울퉁불퉁하게 깎는다
+   2) 면 나누기 — 밝은 면 / 중간 면 / 그늘진 면을 각진 다각형으로 갈라 붙여 깎인 돌로 읽히게 한다
+   3) 뒤로 끌리는 먼지 — 진행 방향(왼쪽)으로만 번지는 모션블러가 붙은 흐릿한 잔상
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" width="220" height="220">
+  <defs>
+    <linearGradient id="faceLit" x1="0.1" y1="0" x2="0.8" y2="1">
+      <stop offset="0%"   stop-color="#bcc0c9"/>
+      <stop offset="45%"  stop-color="#8f949f"/>
+      <stop offset="100%" stop-color="#676c77"/>
+    </linearGradient>
+    <linearGradient id="faceMid" x1="0" y1="0" x2="0.9" y2="1">
+      <stop offset="0%"   stop-color="#7e8490"/>
+      <stop offset="100%" stop-color="#51565f"/>
+    </linearGradient>
+    <linearGradient id="faceDark" x1="0.2" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#464b54"/>
+      <stop offset="100%" stop-color="#2b2f37"/>
+    </linearGradient>
+    <radialGradient id="dustGrad">
+      <stop offset="0%"   stop-color="#cfd4de" stop-opacity="0.5"/>
+      <stop offset="55%"  stop-color="#9aa0ad" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#9aa0ad" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- 테두리를 불규칙하게 깎는다 — 매끈한 다각형이 가짜처럼 보이는 주범 -->
+    <filter id="chip" x="-80%" y="-80%" width="260%" height="260%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.038 0.044" numOctaves="4" seed="13" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="12" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <!-- 진행 방향(가로)으로만 번지는 모션블러 -->
+    <filter id="smear" x="-120%" y="-60%" width="340%" height="220%">
+      <feGaussianBlur stdDeviation="9 2.2"/>
+    </filter>
+    <filter id="softDust" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+
+    <style>
+      .spin  { transform-box: view-box; transform-origin: 110px 110px;
+               animation: spin 0.62s linear infinite; }
+      .spin2 { transform-box: view-box; transform-origin: 110px 110px;
+               animation: spin 0.62s linear infinite; }
+      /* 잔상은 본체보다 살짝 늦게 돈다 — 겹쳐 보이지 않게 */
+      .trail { transform-box: view-box; transform-origin: 110px 110px;
+               animation: spin 0.62s linear infinite; animation-delay: -0.055s; }
+      .puff  { transform-box: view-box; animation: puff 0.5s ease-out infinite; }
+      .puff2 { animation-delay: -0.17s; }
+      .puff3 { animation-delay: -0.34s; }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+      /* 뒤로 흘리는 먼지 — 돌 뒤에서 태어나 멀어지며 사라진다 */
+      @keyframes puff {
+        0%   { transform: translate(0, 0) scale(0.45); opacity: 0.55; }
+        100% { transform: translate(-78px, 6px) scale(1.5); opacity: 0; }
+      }
+    </style>
+  </defs>
+
+  <!-- ── 뒤로 끌리는 먼지 ─────────────────────────────────── -->
+  <g filter="url(#softDust)">
+    <circle class="puff"        cx="86" cy="112" r="17" fill="url(#dustGrad)"/>
+    <circle class="puff puff2"  cx="88" cy="103" r="14" fill="url(#dustGrad)"/>
+    <circle class="puff puff3"  cx="84" cy="120" r="15" fill="url(#dustGrad)"/>
+  </g>
+
+  <!-- ── 모션블러 잔상 ────────────────────────────────────── -->
+  <g class="trail" filter="url(#smear)" opacity="0.5">
+    <polygon points="110,64 148,78 163,110 151,146 112,162 74,152 57,120 67,82"
+             fill="#8a90a0"/>
+  </g>
+
+  <!-- ── 돌 본체 ──────────────────────────────────────────── -->
+  <g class="spin">
+    <g filter="url(#chip)">
+      <!-- 바깥 테두리 — 어두운 맵 위에서 실루엣이 살아나게 -->
+      <polygon points="110,64 148,78 163,110 151,146 112,162 74,152 57,120 67,82"
+               fill="#2b2f38" stroke="#22252c" stroke-width="5" stroke-linejoin="round"/>
+      <!-- 밝은 면 (왼쪽 위에서 빛이 온다) -->
+      <polygon points="110,64 148,78 154,104 116,116 78,104 67,82"
+               fill="url(#faceLit)"/>
+      <!-- 중간 면 -->
+      <polygon points="78,104 116,116 112,162 74,152 57,120"
+               fill="url(#faceMid)"/>
+      <!-- 그늘진 면 -->
+      <polygon points="116,116 154,104 163,110 151,146 112,162"
+               fill="url(#faceDark)"/>
+      <!-- 면과 면 사이 깨진 금 -->
+      <path d="M78,104 L96,106 L116,116 L136,108 L154,104" fill="none" stroke="#2b2f37" stroke-width="3" stroke-linejoin="round" opacity="0.85"/>
+      <path d="M116,116 L110,134 L118,146 L112,162" fill="none" stroke="#2b2f37" stroke-width="2.5" stroke-linejoin="round" opacity="0.7"/>
+      <path d="M110,64 L106,80 L112,92 L92,100" fill="none" stroke="#3d424b" stroke-width="2" stroke-linejoin="round" opacity="0.55"/>
+      <!-- 잔금 — 표면이 갈라진 자국 -->
+      <path d="M88,92 L100,98" fill="none" stroke="#3d424b" stroke-width="1.6" opacity="0.5"/>
+      <path d="M126,128 L138,124" fill="none" stroke="#24272e" stroke-width="1.6" opacity="0.45"/>
+      <path d="M74,128 L86,140" fill="none" stroke="#3d424b" stroke-width="1.5" opacity="0.4"/>
+    </g>
+
+    <!-- 알갱이 — 화강암처럼 얼룩덜룩하게 -->
+    <g opacity="0.5">
+      <circle cx="96"  cy="86"  r="2.4" fill="#e6e9ef"/>
+      <circle cx="128" cy="92"  r="1.8" fill="#d6dae2"/>
+      <circle cx="86"  cy="128" r="2.1" fill="#b3b9c4"/>
+      <circle cx="132" cy="136" r="1.6" fill="#878d99"/>
+      <circle cx="112" cy="106" r="1.4" fill="#eef0f5"/>
+      <circle cx="70"  cy="112" r="1.5" fill="#a5abb7"/>
+      <circle cx="118" cy="78"  r="1.3" fill="#dfe2e9"/>
+      <circle cx="104" cy="120" r="1.2" fill="#9aa0ac"/>
+      <circle cx="142" cy="116" r="1.4" fill="#7e838f"/>
+      <circle cx="80"  cy="98"  r="1.2" fill="#ced3db"/>
+      <circle cx="122" cy="150" r="1.3" fill="#6e747f"/>
+      <circle cx="64"  cy="126" r="1.1" fill="#b9bec9"/>
+    </g>
+
+    <!-- 위쪽 모서리 빛 -->
+    <path d="M110,64 L148,78" fill="none" stroke="#f2f4f8" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+    <path d="M67,82 L110,64"  fill="none" stroke="#dfe3ea" stroke-width="2.4" stroke-linecap="round" opacity="0.4"/>
+  </g>
+</svg>

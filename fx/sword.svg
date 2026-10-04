@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  목검(wooden_sword) 베기 — cards.js의 cast: 'sword'
+  기준점(타워 중심) = (300, 200) · 전체 길이 0.7초 · 피해는 0.3초에 들어간다
+
+  '도형'처럼 보이지 않게 하는 세 가지:
+   1) #tear  — feTurbulence + feDisplacementMap으로 테두리를 찢는다 (균일한 곡선이 가짜처럼 보이는 주범)
+   2) 3층 밝기 — 새하얀 심지(core) / 색이 있는 테두리(rim) / 번지는 빛(glow)
+   3) 뒤따르는 잔상 — 본 궤적보다 늦게 도는 흐릿한 한 겹 + 진행 방향 모션블러
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+  <defs>
+    <linearGradient id="coreGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="22%"  stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="52%"  stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="80%"  stop-color="#ffffff" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="rimGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#9fd8ff" stop-opacity="0"/>
+      <stop offset="28%"  stop-color="#dff1ff" stop-opacity="0.8"/>
+      <stop offset="55%"  stop-color="#eaf7ff" stop-opacity="0.95"/>
+      <stop offset="82%"  stop-color="#9fd8ff" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#7cc4ff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="haloGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#5fb4ff" stop-opacity="0"/>
+      <stop offset="50%"  stop-color="#79c8ff" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#5fb4ff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="cutGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="22%"  stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="50%"  stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="78%"  stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="flashGrad">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="38%"  stop-color="#d9efff" stop-opacity="0.45"/>
+      <stop offset="72%"  stop-color="#7cc4ff" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- 테두리를 불규칙하게 찢는다 -->
+    <filter id="tear" x="-90%" y="-90%" width="280%" height="280%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.014 0.055" numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="11" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <!-- 같은 노이즈, 더 거칠게 (잔상용) -->
+    <filter id="tear2" x="-90%" y="-90%" width="280%" height="280%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02 0.08" numOctaves="2" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="16" xChannelSelector="R" yChannelSelector="G"/>
+      <feGaussianBlur stdDeviation="2.5"/>
+    </filter>
+    <filter id="halo" x="-90%" y="-90%" width="280%" height="280%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+    <!-- 진행 방향(가로)으로만 번지는 모션블러 -->
+    <filter id="smear" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3.5 0.8"/>
+    </filter>
+
+  </defs>
+
+  <style>
+    .swing, .ghost, .flash { transform-box: view-box; transform-origin: 170px 200px; }
+    .flash { transform-origin: 300px 200px; }
+
+    /* 칼날 — 커지지 않고 '회전'으로 벤다 (커지면 충격파처럼 보인다) */
+    .swing { animation: swing 0.3s cubic-bezier(0.2, 0.7, 0.3, 1) 0.04s both; }
+    @keyframes swing {
+      0%   { transform: rotate(-55deg) scale(0.98); opacity: 0; }
+      18%  { opacity: 1; }
+      70%  { transform: rotate(25deg)  scale(1);    opacity: 1; }
+      100% { transform: rotate(45deg)  scale(1.01); opacity: 0; }
+    }
+
+    /* 뒤따르는 잔상 — 같은 궤적을 조금 늦게, 더 흐리게 */
+    .ghost { animation: ghost 0.34s cubic-bezier(0.2, 0.7, 0.3, 1) 0.04s both; }
+    @keyframes ghost {
+      0%   { transform: rotate(-62deg); opacity: 0; }
+      22%  { opacity: 0.5; }
+      70%  { transform: rotate(10deg);  opacity: 0.34; }
+      100% { transform: rotate(32deg);  opacity: 0; }
+    }
+
+    /* 베인 자국 — 대각선으로 그어진다 */
+    .cut { animation: cut 0.22s ease-out 0.16s both; }
+    @keyframes cut {
+      0%   { clip-path: inset(0 100% 0 0); opacity: 0; }
+      30%  { clip-path: inset(0 0 0 0);    opacity: 1; }
+      100% { clip-path: inset(0 0 0 0);    opacity: 0; }
+    }
+
+    /* 베인 순간의 작은 섬광 (퍼지지 않는다) */
+    .flash { animation: flash 0.16s ease-out 0.26s both; }
+    @keyframes flash {
+      0%   { transform: scale(0.7);  opacity: 0; }
+      40%  { transform: scale(1);    opacity: 0.9; }
+      100% { transform: scale(1.05); opacity: 0; }
+    }
+
+    /* 베인 자리에서 튀는 불똥 */
+    .shards { transform-box: view-box; transform-origin: 300px 200px;
+              animation: shards 0.26s cubic-bezier(0.1, 0.8, 0.3, 1) 0.24s both; }
+    @keyframes shards {
+      0%   { transform: scale(0.3);  opacity: 0; }
+      25%  { opacity: 0.95; }
+      100% { transform: scale(1.35); opacity: 0; }
+    }
+  </style>
+
+  <!-- 뒤따르는 잔상 -->
+  <g class="ghost" filter="url(#tear2)">
+    <path d="M 262.3 81.8 A 150 150 0 0 1 262.3 318.2" fill="none" stroke="url(#haloGrad)" stroke-width="40" stroke-linecap="round"/>
+  </g>
+
+  <!-- 칼날 본체 — 빛(glow) · 테두리(rim) · 심지(core) 세 겹이 함께 찢긴다 -->
+  <g class="swing" filter="url(#tear)">
+    <path d="M 262.3 81.8 A 150 150 0 0 1 262.3 318.2" fill="none" stroke="url(#haloGrad)" stroke-width="46" stroke-linecap="round" filter="url(#halo)"/>
+    <path d="M 262.3 81.8 A 150 150 0 0 1 262.3 318.2" fill="none" stroke="url(#rimGrad)" stroke-width="22" stroke-linecap="round" filter="url(#smear)"/>
+    <path d="M 262.3 81.8 A 150 150 0 0 1 262.3 318.2" fill="none" stroke="url(#coreGrad)" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <!-- 베인 선 (-38°) — 같은 3층 구조 -->
+  <g transform="rotate(-38 300 200)">
+    <g class="cut" filter="url(#tear)">
+      <rect x="175" y="192" width="250" height="16" rx="8" fill="url(#haloGrad)" filter="url(#halo)"/>
+      <rect x="178" y="196.5" width="244" height="7" rx="3.5" fill="url(#cutGrad)" filter="url(#smear)"/>
+      <rect x="186" y="198.6" width="228" height="2.8" rx="1.4" fill="#ffffff"/>
+    </g>
+  </g>
+
+  <circle class="flash" cx="300" cy="200" r="45" fill="url(#flashGrad)"/>
+
+  <!-- 불똥 — 굵기·길이가 제각각이라야 파편처럼 보인다 -->
+  <g class="shards" stroke="#ffffff" stroke-linecap="round" filter="url(#halo)" opacity="0.9">
+    <line x1="316" y1="200" x2="366" y2="200" stroke-width="2.6" transform="rotate(-34 300 200)"/>
+    <line x1="314" y1="200" x2="348" y2="200" stroke-width="1.8" transform="rotate(-8 300 200)"/>
+    <line x1="318" y1="200" x2="358" y2="200" stroke-width="3.2" transform="rotate(22 300 200)"/>
+    <line x1="313" y1="200" x2="341" y2="200" stroke-width="1.6" transform="rotate(-62 300 200)"/>
+    <line x1="315" y1="200" x2="352" y2="200" stroke-width="2.2" transform="rotate(140 300 200)"/>
+    <line x1="312" y1="200" x2="338" y2="200" stroke-width="1.5" transform="rotate(196 300 200)"/>
+  </g>
+</svg>

@@ -4,10 +4,9 @@
 
 :root {
   /* 배경/표면 */
-  --bg:          #0f0f1a;
+  --bg:          #16306b;
+  --bg-gradient: linear-gradient(160deg, #1d3f86 0%, #2f5fae 48%, #14295c 100%);
   --bg-surface:  #1a1a2e;
-  --bg-card:     #16213e;
-  --bg-elevated: #0f3460;
 
   /* 텍스트 */
   --text-primary:   #e0e0e0;
@@ -17,24 +16,11 @@
   /* 등급 색상 */
   --grade-common:    #c0c0c0;
   --grade-rare:      #4caf50;
-  --grade-epic:      #9c27b0;
   --grade-mythic:    #e53935;
   --grade-legendary: #ffd700;
-  --grade-secret:    #2a2a2a;
-
-  /* 에너지 */
-  --energy-color: #00bcd4;
-
-  /* HP 바 */
-  --hp-high:   #4caf50;
-  --hp-mid:    #ff9800;
-  --hp-low:    #f44336;
-  --hp-shield: #64b5f6;
 
   /* 버튼 */
   --btn-primary: #e94560;
-  --btn-secondary: #0f3460;
-  --btn-danger:  #b71c1c;
 
   /* 기타 */
   --border-radius: 8px;
@@ -52,6 +38,8 @@ html, body {
   height: 100%;
   font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
   background: var(--bg);
+  background-image: var(--bg-gradient);
+  background-attachment: fixed;
   color: var(--text-primary);
   overflow: hidden;
 }
@@ -98,8 +86,6 @@ html, body {
 }
 
 .btn-primary   { background: var(--btn-primary); color: #fff; }
-.btn-secondary { background: var(--btn-secondary); color: #fff; }
-.btn-danger    { background: var(--btn-danger); color: #fff; }
 .btn-confirm {
   background: #1E3A5F;
   color: #FFD700;
@@ -110,17 +96,6 @@ html, body {
   filter: none;
   transform: translateY(-1px);
 }
-
-.btn-icon {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 18px;
-  padding: 4px 6px;
-  border-radius: 4px;
-  transition: background var(--transition);
-}
-.btn-icon:hover { background: rgba(255,255,255,0.1); }
 
 /* ── 입력 공통 ─────────────────────────────────────────── */
 .input-group {
@@ -159,26 +134,221 @@ input[type="text"]::placeholder {
 
 .hidden { display: none !important; }
 
-/* ── 구분선 ─────────────────────────────────────────────── */
-.divider {
-  text-align: center;
-  color: #94A3B8;
-  font-size: 13px;
-  margin: 12px 0;
-  position: relative;
-}
-.divider::before, .divider::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: 42%;
-  height: 1px;
-  background: #4B5563;
-}
-.divider::before { left: 0; }
-.divider::after  { right: 0; }
-
 /* ── 스크롤바 스타일 ────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+/* ── 로딩 화면 ──────────────────────────────────────────── */
+#screen-loading {
+  background: var(--bg);
+  background-image: var(--bg-gradient);
+  z-index: 200;
+}
+
+/* 480×480 고정 캔버스 — transition.js가 뷰포트에 맞춰 scale만 바꾼다 */
+.loading-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 480px;
+  height: 480px;
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 34px;
+  /* 크기 맞춤·이어받은 진행률이 적용되기 전엔 숨김 — 첫 그림부터 제자리·제 값으로 (페이지 인라인 스크립트) */
+  visibility: hidden;
+}
+.loading-stage.ready { visibility: visible; }
+
+.loading-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 58px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: 3px;
+  background: linear-gradient(180deg, #FFD700 0%, #C8A000 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  /* 그라데이션 글자에 얇은 검정 외곽선 (로비 로고와 같은 방식) */
+  filter: drop-shadow( 1px  0    0 rgba(0,0,0,0.85))
+          drop-shadow(-1px  0    0 rgba(0,0,0,0.85))
+          drop-shadow( 0    1px  0 rgba(0,0,0,0.85))
+          drop-shadow( 0   -1px  0 rgba(0,0,0,0.85));
+}
+
+.loading-logo-icon {
+  font-size: 64px;
+  background: linear-gradient(180deg, #FFD700 0%, #C8A000 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── 원형 게이지: 두꺼운 회색 그라데이션 링 + 돌아가는 버퍼링 + 가운데 퍼센트 ── */
+.loading-ring {
+  --ring: 20px;                       /* 링 두께 */
+  position: relative;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: #1f232a;                /* 링과 가운데 원 사이 틈 */
+  /* 링 바깥 테두리 */
+  box-shadow: 0 0 0 3px #1f232a, 0 8px 24px rgba(0, 0, 0, 0.55);
+}
+
+/* 링 모양으로 잘라내는 공통 마스크 */
+.loading-ring-track,
+.loading-ring-spin {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring) + 1px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring) + 1px));
+}
+
+/* 진행률 — 채워진 부분은 밝은 회색 → 짙은 회색 그라데이션, 남은 부분은 어두운 홈 */
+.loading-ring-track {
+  background:
+    conic-gradient(#f3f5f8 0%, #aab1bc calc(var(--p) * 0.5%), #6f7681 calc(var(--p) * 1%),
+                   transparent calc(var(--p) * 1%) 100%),
+    linear-gradient(160deg, #2c3139 0%, #15181d 100%);
+}
+
+/* 버퍼링 — 링 위를 계속 도는 밝은 꼬리 */
+.loading-ring-spin {
+  background: conic-gradient(from 0deg, transparent 0deg, transparent 250deg,
+                              rgba(255, 255, 255, 0.10) 300deg, rgba(255, 255, 255, 0.75) 356deg, transparent 360deg);
+  animation: loading-spin 1s linear infinite;
+}
+
+@keyframes loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 가운데 원 — 퍼센트 */
+.loading-ring-core {
+  position: absolute;
+  inset: calc(var(--ring) + 4px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 35% 30%, #4a505a 0%, #2a2e35 70%, #1c1f25 100%);
+  box-shadow: inset 0 0 0 2px #1f232a, inset 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.loading-pct-text {
+  font-size: 38px;
+  font-weight: 800;
+  color: #f3f5f8;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+.loading-message {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e6ecf5;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+/* 로딩 화면이 걷힌 뒤 실제 화면이 살짝 떠오르듯 나타난다 (loading.js revealScreen) */
+.screen.screen-enter {
+  animation: screen-enter 0.28s ease-out;
+}
+
+@keyframes screen-enter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   인터넷 연결 안내 (js/netstate.js)
+   잠깐 끊기면 위쪽 띠, 오래 끊기면 전체 화면.
+   화면을 갈아엎지 않고 덮개로만 띄운다 — 방 코드와 진행 중인 판을 잃지 않는다.
+════════════════════════════════════════════════════════════ */
+.net-state {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.net-state-bar {
+  margin-top: 14px;
+  padding: 9px 20px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffe9b0;
+  background: rgba(24, 18, 8, 0.94);
+  border: 1px solid rgba(255, 200, 90, 0.5);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
+  animation: net-state-in 0.25s ease-out;
+}
+
+.net-state-back .net-state-bar {
+  color: #c8ffd8;
+  background: rgba(10, 28, 16, 0.94);
+  border-color: rgba(120, 230, 150, 0.5);
+}
+
+@keyframes net-state-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* 오래 끊김 — 전체를 덮고 조작을 받는다 */
+.net-state-lost {
+  pointer-events: auto;
+  align-items: center;
+  background: rgba(6, 9, 18, 0.88);
+  backdrop-filter: blur(3px);
+}
+
+.net-state-panel {
+  width: min(420px, calc(100vw - 48px));
+  padding: 32px 28px;
+  border-radius: 18px;
+  text-align: center;
+  color: #e9eefc;
+  background: linear-gradient(170deg, #1b2440 0%, #131a2e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  animation: net-state-in 0.25s ease-out;
+}
+
+.net-state-icon  { font-size: 44px; line-height: 1; }
+.net-state-panel h2 { margin: 14px 0 10px; font-size: 21px; }
+.net-state-panel p  { margin: 0 0 8px; font-size: 14px; line-height: 1.6; color: #b9c4e0; }
+.net-state-note  { font-size: 12.5px !important; color: #8592b5 !important; }
+
+.net-state-panel button {
+  margin-top: 18px;
+  padding: 11px 30px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0d1526;
+  background: linear-gradient(180deg, #7fd4ff 0%, #4aa8e8 100%);
+  cursor: pointer;
+}
+
+.net-state-panel button:hover { filter: brightness(1.08); }

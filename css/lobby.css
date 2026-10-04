@@ -2,19 +2,6 @@
    lobby.css — 로비 & 대기실 화면 스타일
 ============================================================ */
 
-/* ── 로비 카드 ─────────────────────────────────────────── */
-.lobby-card {
-  background: var(--bg-surface);
-  border-radius: 16px;
-  padding: 36px 40px;
-  width: 100%;
-  max-width: 420px;
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 .logo {
   font-size: 28px;
   font-weight: 800;
@@ -48,148 +35,6 @@ h2 {
   font-weight: 700;
   margin-bottom: 16px;
   text-align: center;
-}
-
-/* ── 대기실 카드 ────────────────────────────────────────── */
-.waiting-card {
-  background: var(--bg-surface);
-  border-radius: 16px;
-  padding: 36px 40px;
-  width: 100%;
-  max-width: 440px;
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* 방 코드 박스 */
-.room-code-box {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: var(--border-radius);
-  padding: 10px 16px;
-  margin-bottom: 8px;
-}
-
-.room-code-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.room-code-value {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: 6px;
-  color: var(--grade-legendary);
-  font-family: 'Courier New', monospace;
-}
-
-/* 플레이어 슬롯 */
-.player-slots {
-  display: flex;
-  gap: 12px;
-  margin: 8px 0;
-}
-
-.player-slot {
-  flex: 1;
-  background: rgba(255,255,255,0.04);
-  border: 2px dashed rgba(255,255,255,0.15);
-  border-radius: var(--border-radius);
-  padding: 14px;
-  text-align: center;
-  transition: border-color var(--transition), background var(--transition);
-}
-
-.player-slot.filled {
-  border-style: solid;
-  border-color: var(--btn-primary);
-  background: rgba(233,69,96,0.08);
-}
-
-.slot-role {
-  font-size: 11px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  display: block;
-}
-
-.slot-name {
-  font-size: 16px;
-  font-weight: 700;
-  display: block;
-  margin-top: 4px;
-  color: var(--text-primary);
-}
-
-.slot-badge {
-  font-size: 11px;
-  color: var(--grade-legendary);
-  margin-top: 4px;
-  display: block;
-}
-
-/* 인원수 */
-.player-count {
-  text-align: center;
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 4px 0;
-}
-
-/* 대기 메시지 */
-.waiting-msg {
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: 13px;
-  margin: 4px 0;
-  animation: pulse 2s infinite;
-}
-
-/* 플레이어 배지 (닉네임 표시) */
-.room-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.player-badge {
-  font-size: 13px;
-  background: rgba(255,255,255,0.07);
-  padding: 4px 10px;
-  border-radius: 20px;
-  color: #38BDF8;
-}
-
-.online-count-badge {
-  font-size: 12px;
-  color: #4ade80;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.online-dot {
-  width: 7px;
-  height: 7px;
-  background: #4ade80;
-  border-radius: 50%;
-  display: inline-block;
-  box-shadow: 0 0 5px #4ade80;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.5; }
 }
 
 /* ── 방 목록 ────────────────────────────────────────────── */
@@ -320,364 +165,831 @@ h2 {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── 아이콘 버튼 행 ─────────────────────────────────────── */
-.icon-btn-row {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin-top: 6px;
-}
-
-/* ── 방 선택 화면 카드 배경 ─────────────────────────────── */
-#screen-room .lobby-card {
-  background: #0F172A;
-}
-
-#screen-room h2 {
-  color: #F8FAFC;
-}
-
-/* ── 방 만들기 버튼 ─────────────────────────────────────── */
-#btn-create-room {
-  background: #B45309;
-  color: #0F172A;
-  border: none;
-}
-#btn-create-room:hover:not(:disabled) {
-  background: #c45e0a;
-  filter: none;
-  transform: translateY(-1px);
-}
-
-/* ── 방 접속 버튼 ───────────────────────────────────────── */
-#btn-join-room {
-  background: #1E293B;
-  color: #FFD700;
-  border: 1px solid #334155;
-}
-#btn-join-room:hover:not(:disabled) {
-  background: #263348;
-  filter: none;
-  transform: translateY(-1px);
-}
-
-/* ── 방 코드 입력 필드 ──────────────────────────────────── */
-#input-room-code {
-  background: #1F2937;
-}
-#input-room-code::placeholder {
-  color: #6B7280;
-}
-
-/* ── 설정 버튼 ──────────────────────────────────────────── */
-.btn-settings {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
-  align-self: center;
-  margin-top: 6px;
-  flex-shrink: 0;
-}
-.btn-settings:hover {
-  background: rgba(255,255,255,0.08);
-  color: var(--text-primary);
-  border-color: rgba(255,255,255,0.25);
-}
-.btn-settings .material-symbols-outlined {
-  font-size: 20px;
-  line-height: 1;
-}
-
-/* ── 설정 모달 ──────────────────────────────────────────── */
-.settings-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.settings-modal.hidden { display: none; }
-
-.settings-overlay {
+/* ============================================================
+   로비 패널 — 1:1 정사각형 고정 캔버스
+============================================================ */
+/* ── 공용 패널 서피스 ──────────────────────────────────────
+   닉네임 패널 / 메인 패널 / 방 목록 사이드바가 공유하는 색감.
+   모두 px 고정 크기 캔버스이고 JS가 transform: scale()로 뷰포트에 맞추므로
+   확대/축소해도 리플로우(줄바꿈·레이아웃 깨짐)가 발생하지 않는다. */
+.panel-surface {
   position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-}
-
-.settings-panel {
-  position: relative;
-  background: var(--bg-surface);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 16px;
-  padding: 28px 32px;
-  min-width: 280px;
+  border-radius: 0;
+  background: linear-gradient(155deg, #9aa1ac 0%, #6f7681 45%, #4a505a 100%);
+  border: 1px solid;
+  border-image: linear-gradient(155deg, #3d434d 0%, #1b1e23 100%) 1;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.55);
+  flex: 0 0 auto;
+  max-width: none;
 }
-.settings-panel h3 {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
-  text-align: center;
-  margin: 0;
+
+/* ── 닉네임 패널 (480×480 고정) ──────────────────────────── */
+.nickname-panel {
+  top: 50%;
+  left: 50%;
+  transform-origin: center center;
+  width: 480px;
+  height: 480px;
+  padding: 40px;
+  justify-content: center;
+  gap: 0;
 }
-.settings-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+
+/* 밝은 박스 위 텍스트 대비 보정 + 제목 확대 */
+.nickname-panel .logo {
+  font-size: 46px;
+  line-height: 1.1;
+  letter-spacing: 3px;
+  margin-bottom: 10px;
+  white-space: nowrap;
 }
-.settings-row span {
+
+.nickname-panel .logo-icon {
+  font-size: 44px;
+  margin-right: 6px;
+}
+
+.nickname-panel .logo,
+.nickname-panel .logo-icon {
+  background: linear-gradient(180deg, #f2f5fa 0%, #c3ccd9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* 글자색(그라데이션)은 그대로 두고 얇은 검정 테두리만 추가.
+   background-clip:text 와 -webkit-text-stroke 는 충돌하므로
+   렌더 결과에 적용되는 drop-shadow 4방향으로 외곽선을 만든다.
+   아이콘은 .logo 안에 중첩돼 있어 부모에만 걸면 함께 적용된다. */
+.nickname-panel .logo {
+  filter: drop-shadow( 1px  0    0 rgba(0,0,0,0.85))
+          drop-shadow(-1px  0    0 rgba(0,0,0,0.85))
+          drop-shadow( 0    1px  0 rgba(0,0,0,0.85))
+          drop-shadow( 0   -1px  0 rgba(0,0,0,0.85));
+}
+
+.nickname-panel .subtitle {
+  color: #e6eaf0;
   font-size: 14px;
-  color: var(--text-secondary);
-}
-.lang-select {
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-size: 14px;
-  padding: 6px 10px;
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.lang-select:focus { border-color: var(--btn-primary); }
-.lang-select option { background: #1a1a2e; }
-
-/* ── 정보 패널 (업데이트 로그 / 팁) ────────────────────── */
-.info-panel {
-  max-width: 360px;
-  max-height: 70vh;
-  overflow-y: auto;
+  margin-bottom: 24px;
 }
 
-.info-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  font-size: 14px;
-  color: var(--text-primary);
-  line-height: 1.6;
-}
-
-.info-entry {
-  border-left: 3px solid #FFD700;
-  padding-left: 10px;
-}
-
-.info-version {
-  font-size: 12px;
-  font-weight: 700;
-  color: #FFD700;
-  letter-spacing: 1px;
-  display: block;
+/* ── 입력창: 각진 모서리, 진한 검정 배경, 진회색 그라데이션 테두리 ── */
+.panel-surface .input-group {
   margin-bottom: 4px;
 }
 
-.tips-list {
-  padding-left: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.panel-surface input[type="text"] {
+  border-radius: 0;
+  background: linear-gradient(180deg, #121417 0%, #05070a 100%);
+  border: 2px solid;
+  border-image: linear-gradient(180deg, #5a616c 0%, #24282e 100%) 1;
+  color: #ffffff;
+  padding: 13px 16px;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  transition: box-shadow var(--transition);
 }
 
-.tips-list li {
-  color: var(--text-primary);
+.panel-surface input[type="text"]::placeholder {
+  color: #ffffff;
+  opacity: 0.72;
 }
 
-/* ── 채팅 토글 버튼 ─────────────────────────────────────── */
-.chat-toggle-btn {
+.panel-surface input[type="text"]:focus {
+  border-image: linear-gradient(180deg, #8f97a4 0%, #3a4048 100%) 1;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.14);
+}
+
+.panel-surface .error-msg {
+  color: #ff2f24;
+  font-weight: 600;
+  text-shadow:  1px  0    0 rgba(0,0,0,0.9),
+               -1px  0    0 rgba(0,0,0,0.9),
+                0    1px  0 rgba(0,0,0,0.9),
+                0   -1px  0 rgba(0,0,0,0.9);
+}
+
+/* ── 확인 버튼: 박스와 동일한 각진 스타일 ── */
+.panel-surface .btn-confirm {
+  border-radius: 0;
+  background: linear-gradient(180deg, #1b2a44 0%, #0b1220 100%);
+  color: #f3f5f8;
+  border: 2px solid;
+  border-image: linear-gradient(180deg, #5a616c 0%, #24282e 100%) 1;
+  padding: 12px 28px;
+}
+
+.panel-surface .btn-confirm:hover:not(:disabled) {
+  background: linear-gradient(180deg, #24375a 0%, #101a2c 100%);
+}
+
+/* ============================================================
+   메인 화면 — 중앙 1:1 패널 + 좌측 방 목록 사이드바
+   둘 다 px 고정 캔버스이며 JS가 동일한 배율로 scale 한다.
+============================================================ */
+
+/* ── 중앙 패널 (480×480 고정) ────────────────────────────── */
+.main-panel {
+  top: 50%;
+  left: 50%;
+  transform-origin: center center;
+  width: 480px;
+  height: 480px;
+  padding: 22px;
+  justify-content: space-between;
+}
+
+/* 상·하단 좌우 배치 행 */
+.panel-row {
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: space-between;
+  flex: 0 0 auto;
+}
+
+.panel-nickname {
+  font-size: 14px;
+  font-weight: 700;
+  color: #000;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.main-panel .online-count-badge {
   font-size: 13px;
   font-weight: 700;
-  padding: 5px 12px;
-  border-radius: 8px;
+  color: #000;
+  white-space: nowrap;
+}
+
+.main-panel .online-dot {
+  background: #000;
+  box-shadow: none;
+}
+
+/* ── 중앙: 코드로 참가하기 ───────────────────────────────── */
+.panel-center {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1 1 auto;
+  padding: 0 32px;
+}
+
+.panel-heading {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 1px;
+  text-align: center;
+  margin-bottom: 18px;
+  white-space: nowrap;
+  background: linear-gradient(180deg, #f2f5fa 0%, #c3ccd9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow( 1px  0    0 rgba(0,0,0,0.85))
+          drop-shadow(-1px  0    0 rgba(0,0,0,0.85))
+          drop-shadow( 0    1px  0 rgba(0,0,0,0.85))
+          drop-shadow( 0   -1px  0 rgba(0,0,0,0.85));
+}
+
+.panel-center input[type="text"] {
+  text-align: center;
+  letter-spacing: 6px;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+}
+
+.panel-center input[type="text"]::placeholder {
+  letter-spacing: 1px;
+  font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+  font-weight: 400;
+}
+
+/* ── 하단 코너 버튼 (+ / 햄버거) ─────────────────────────── */
+.corner-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border-radius: 0;
+  background: linear-gradient(180deg, #1b2a44 0%, #0b1220 100%);
+  border: 2px solid;
+  border-image: linear-gradient(180deg, #5a616c 0%, #24282e 100%) 1;
+  color: #f3f5f8;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
-  border: 1px solid;
-  background: none;
+  transition: background var(--transition);
 }
-.chat-toggle-btn[data-state="on"] {
-  background: rgba(34, 197, 94, 0.12);
-  color: #22c55e;
-  border-color: #22c55e;
+
+.corner-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #24375a 0%, #101a2c 100%);
 }
-.chat-toggle-btn[data-state="off"] {
-  background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
-  border-color: #ef4444;
+
+.corner-btn:disabled { opacity: 0.45; cursor: default; }
+
+.corner-plus {
+  font-size: 30px;
+  font-weight: 300;
+  line-height: 1;
+  margin-top: -3px;
 }
-.chat-toggle-btn .material-symbols-outlined {
-  font-size: 16px;
+
+.corner-btn .material-symbols-outlined {
+  font-size: 26px;
   line-height: 1;
 }
 
-/* ── 도감 패널 ──────────────────────────────────────────── */
-.codex-panel {
-  max-width: 480px;
-  width: 90vw;
-  max-height: 78vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+/* AI와 대전 — 아이콘 + 글자 */
+.corner-btn-wide {
+  width: auto;
+  gap: 8px;
+  padding: 0 16px;
+}
+
+.corner-btn-label {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* ── 좌측 방 목록 사이드바 (320×480 고정) ───────────────── */
+.room-sidebar {
+  top: 50%;
+  left: 0;
+  transform-origin: left center;
+  width: 320px;
+  height: 480px;
+  padding: 18px;
   gap: 12px;
+  z-index: 10;
 }
 
-.codex-content {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding-right: 4px;
-}
-.codex-content::-webkit-scrollbar { width: 4px; }
-.codex-content::-webkit-scrollbar-track { background: transparent; }
-.codex-content::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.15);
-  border-radius: 2px;
-}
+.room-sidebar.hidden { display: none !important; }
 
-.codex-progress-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.codex-progress-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-.codex-progress-bar-bg {
-  height: 7px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.codex-progress-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #FFD700, #ff9800);
-  border-radius: 4px;
-  transition: width 0.4s;
-}
-
-.codex-section {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.codex-grade-header {
+.sidebar-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 2px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  padding-bottom: 4px;
-}
-.codex-grade-count {
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-weight: 600;
+  flex: 0 0 auto;
 }
 
-.codex-cards-row {
-  display: flex;
-  flex-wrap: wrap;
+.sidebar-title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #f2f5fa;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+.sidebar-close {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 0;
+  background: linear-gradient(180deg, #1b2a44 0%, #0b1220 100%);
+  border: 1px solid #3d434d;
+  color: #e6eaf0;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.sidebar-close:hover {
+  background: linear-gradient(180deg, #24375a 0%, #101a2c 100%);
+}
+
+/* 사이드바 안의 방 목록 — 높이는 고정, 넘치면 목록만 스크롤 */
+.room-sidebar .room-list {
+  flex: 1 1 auto;
+  max-height: none;
+  min-height: 0;
+}
+
+.room-sidebar .room-item {
+  border-radius: 0;
+  background: rgba(8, 12, 20, 0.34);
+  border: 1px solid rgba(0, 0, 0, 0.42);
+  flex-wrap: nowrap;
   gap: 8px;
 }
 
-.codex-card {
-  width: 64px;
+.room-sidebar .room-item:hover {
+  background: rgba(8, 12, 20, 0.5);
+  border-color: rgba(0, 0, 0, 0.6);
+}
+
+.room-sidebar .room-item-code   { font-size: 14px; letter-spacing: 3px; }
+.room-sidebar .room-item-host   { color: #dde2ea; }
+.room-sidebar .room-list-empty  { color: #e6eaf0; }
+
+.room-sidebar .btn-quick-join,
+.room-sidebar .btn-room-waiting,
+.room-sidebar .btn-spectate {
+  border-radius: 0;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   대기실 — 480×480 고정 캔버스 (room.js가 scale)
+============================================================ */
+.waiting-panel {
+  top: 50%;
+  left: 50%;
+  transform-origin: center center;
+  width: 480px;
+  height: 480px;
+  padding: 22px;
+  justify-content: space-between;
+}
+
+/* ── 상단: 방 코드 ───────────────────────────────────────── */
+.room-code-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.room-code-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #000;
+  white-space: nowrap;
+}
+
+.room-code-value {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 5px;
+  color: #000;
+  font-family: 'Courier New', monospace;
+  white-space: nowrap;
+}
+
+.waiting-copy-btn {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  border-radius: 0;
+  background: linear-gradient(180deg, #1b2a44 0%, #0b1220 100%);
+  border: 1px solid #3d434d;
+  color: #e6eaf0;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition);
+}
+
+.waiting-copy-btn:hover {
+  background: linear-gradient(180deg, #24375a 0%, #101a2c 100%);
+}
+
+/* ── 중앙: 플레이어 카드 2장 (거의 맞붙어 있음) ──────────── */
+.waiting-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: 1 1 auto;
+}
+
+.player-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 6px 4px;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  background: var(--bg-card);
-  transition: transform 0.15s;
-  cursor: default;
-}
-.codex-card:hover { transform: translateY(-3px); }
-
-.codex-card.codex-missing {
-  filter: grayscale(100%);
-  opacity: 0.35;
+  gap: 10px;
+  width: 168px;
+  flex: 0 0 auto;
+  padding: 20px 10px;
+  background: rgba(8, 12, 20, 0.30);
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  transition: background var(--transition), opacity var(--transition);
 }
 
-.codex-card.grade-common  { border-color: var(--grade-common); }
-.codex-card.grade-rare    { border-color: var(--grade-rare);   box-shadow: 0 0 5px rgba(76,175,80,0.3); }
-.codex-card.grade-epic    { border-color: var(--grade-epic);   box-shadow: 0 0 5px rgba(156,39,176,0.3); }
-.codex-card.grade-mythic  { border-color: var(--grade-mythic); box-shadow: 0 0 5px rgba(229,57,53,0.3); }
-.codex-card.grade-legendary { border-color: var(--grade-legendary); box-shadow: 0 0 8px rgba(255,215,0,0.4); }
-.codex-card.grade-secret  { border-color: #333; }
-
-.codex-card-icon {
-  font-size: 22px;
-  line-height: 1;
-  text-align: center;
+/* 연결 끊김 유예 중인 상대 */
+.player-card.card-disconnected {
+  opacity: 0.55;
+  filter: grayscale(0.6);
 }
-.codex-card-name {
-  font-size: 9px;
+
+/* AI 상대 */
+.player-card.card-bot .player-avatar-unknown {
+  font-size: 44px;
+  color: inherit;
+}
+
+/* AI 난이도 버튼 (방장만 누를 수 있음) — 카드 바로 아래에 띄워 두 카드 높이를 맞춘다 */
+.player-card.card-bot { position: relative; }
+
+.bot-level-btn {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 12px;
   font-weight: 700;
-  color: var(--text-primary);
-  text-align: center;
+  padding: 4px 12px;
+  border-radius: 0;
+  color: #f3f5f8;
+  background: linear-gradient(180deg, #1b2a44 0%, #0b1220 100%);
+  border: 1px solid #5a616c;
+  cursor: pointer;
+}
+
+.bot-level-btn:hover:not(:disabled) { background: linear-gradient(180deg, #24375a 0%, #101a2c 100%); }
+.bot-level-btn:disabled { opacity: 0.6; cursor: default; }
+
+.player-card.card-empty {
+  background: rgba(8, 12, 20, 0.14);
+  border-style: dashed;
+}
+
+/* 프로필 자리 — 원형 (프로필 이미지 도입 전 placeholder) */
+.player-avatar {
+  width: 82px;
+  height: 82px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #2b3240 0%, #0c1018 100%);
+  border: 2px solid #3d434d;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.player-avatar-unknown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+  color: #8c94a1;
+}
+
+.player-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #000;
+  letter-spacing: 0.3px;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 100%;
 }
 
-.codex-title-badge {
-  text-align: center;
+.player-ready-state {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 12px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.player-ready-state.state-waiting {
+  color: #ffd66b;
+  background: rgba(0, 0, 0, 0.42);
+  border-color: rgba(255, 214, 107, 0.45);
+}
+
+.player-ready-state.state-ready {
+  color: #79f2a6;
+  background: rgba(0, 0, 0, 0.42);
+  border-color: rgba(121, 242, 166, 0.5);
+}
+
+.player-ready-state.state-absent {
+  color: #b9bfc9;
+  background: rgba(0, 0, 0, 0.28);
+  border-color: rgba(0, 0, 0, 0.35);
+}
+
+/* ── 하단: 나가기 / 게임 준비 ────────────────────────────── */
+.waiting-btn {
+  flex: 0 0 auto;
+  min-width: 118px;
+  padding: 11px 20px;
+  border-radius: 0;
+  border: 2px solid;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), opacity var(--transition);
+}
+
+.waiting-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.waiting-btn-leave {
+  background: linear-gradient(180deg, #5a1d1d 0%, #2a0c0c 100%);
+  border-image: linear-gradient(180deg, #8a5252 0%, #3a2020 100%) 1;
+  color: #ffd9d6;
+}
+
+.waiting-btn-leave:hover {
+  background: linear-gradient(180deg, #6d2424 0%, #380f0f 100%);
+}
+
+.waiting-btn-ready {
+  background: linear-gradient(180deg, #1b2a44 0%, #0b1220 100%);
+  border-image: linear-gradient(180deg, #5a616c 0%, #24282e 100%) 1;
+  color: #f3f5f8;
+}
+
+.waiting-btn-ready:hover:not(:disabled) {
+  background: linear-gradient(180deg, #24375a 0%, #101a2c 100%);
+}
+
+/* 준비완료 상태의 버튼 (= 준비 취소) */
+.waiting-btn-ready.is-ready {
+  background: linear-gradient(180deg, #14452c 0%, #071a10 100%);
+  border-image: linear-gradient(180deg, #4e8a66 0%, #1d3a28 100%) 1;
+  color: #d8ffe8;
+}
+
+.waiting-btn-ready.is-ready:hover:not(:disabled) {
+  background: linear-gradient(180deg, #1a5736 0%, #0a2416 100%);
+}
+
+
+/* ============================================================
+   밸런스 패치 노트 (js/patchnotes.js)
+   닉네임 확인 버튼 아래의 버튼 → 누르면 화면 가운데에 창이 뜬다.
+   창 안: 카드 한 줄씩 아이콘 · 이름 · 바뀐 값(전 → 후) · 상향/하향 표
+============================================================ */
+.panel-surface .btn-patch-notes,
+.btn-patch-notes {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 0;
+  cursor: pointer;
+  font: inherit;
   font-size: 14px;
   font-weight: 800;
-  color: #FFD700;
-  padding: 8px;
-  border: 1px solid #FFD700;
-  border-radius: 8px;
-  background: rgba(255,215,0,0.08);
+  color: #f2f5fa;
+  background: linear-gradient(180deg, #161c26 0%, #0b0f16 100%);
+  border: 1px solid;
+  border-image: linear-gradient(180deg, #5a616c 0%, #24282e 100%) 1;
+  transition: filter 0.15s, transform 0.15s;
 }
+.btn-patch-notes:hover { filter: brightness(1.25); }
+.btn-patch-notes:active { transform: translateY(1px); }
+.btn-patch-notes .pn-open { font-size: 20px; line-height: 1; color: #ffd66b; margin-left: auto; }
 
-/* ── 칭호 획득 토스트 ───────────────────────────────────── */
-.codex-title-toast {
+/* 창 — 어두운 막 위 가운데 */
+.pn-modal {
   position: fixed;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background: rgba(15, 15, 30, 0.95);
-  border: 1px solid #FFD700;
-  border-radius: 10px;
-  padding: 12px 24px;
-  color: #FFD700;
+  inset: 0;
+  z-index: 20000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3vh 16px;
+  background: rgba(4, 7, 12, 0.72);
+  backdrop-filter: blur(3px);
+  animation: pn-fade 0.16s ease-out both;
+}
+.pn-modal.pn-closing { animation: pn-fade 0.16s ease-in reverse both; }
+@keyframes pn-fade { from { opacity: 0; } }
+.pn-dialog {
+  width: min(560px, 100%);
+  height: min(760px, 94vh);
+  animation: pn-pop 0.2s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.pn-modal.pn-closing .pn-dialog { animation: none; }
+@keyframes pn-pop { from { transform: translateY(12px) scale(0.96); } }
+.pn-close {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: #c9d0da;
+  font-size: 15px;
+  cursor: pointer;
+}
+.pn-close:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+
+.patch-notes {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #11161f 0%, #0a0e15 100%);
+  border: 1px solid;
+  border-image: linear-gradient(180deg, #4a515c 0%, #1b1f26 100%) 1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 6px 18px rgba(0, 0, 0, 0.45);
+  text-align: left;
+}
+.pn-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(90deg, rgba(255, 196, 70, 0.10) 0%, rgba(255, 196, 70, 0) 60%);
+}
+.pn-tag {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.6px;
+  color: #1a1204;
+  background: linear-gradient(180deg, #ffd66b 0%, #e9a92a 100%);
+  padding: 3px 7px;
+}
+.pn-title {
   font-size: 15px;
   font-weight: 800;
-  z-index: 9999;
-  opacity: 0;
-  transition: opacity 0.4s, transform 0.4s;
-  pointer-events: none;
-  white-space: nowrap;
+  color: #f2f5fa;
+  letter-spacing: 0.5px;
 }
-.codex-title-toast.visible {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
+.pn-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 12px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: #3a414c transparent;
+}
+.pn-scroll::-webkit-scrollbar { width: 6px; }
+.pn-scroll::-webkit-scrollbar-thumb { background: #3a414c; }
+.pn-patch + .pn-patch { margin-top: 14px; }
+.pn-patch-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 2px 7px;
+  background: #0e131b;
+  border-bottom: 1px solid rgba(255, 214, 107, 0.25);
+}
+.pn-patch-title { font-size: 13px; font-weight: 800; color: #ffd66b; }
+.pn-date { font-size: 11px; color: #8a93a1; font-variant-numeric: tabular-nums; }
+.pn-group { margin-top: 8px; }
+.pn-group-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8a93a1;
+  letter-spacing: 1px;
+  margin: 0 0 4px 2px;
+}
+.pn-list { list-style: none; margin: 0; padding: 0; }
+.pn-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-left: 3px solid var(--pn, #6f7681);
+  background: rgba(255, 255, 255, 0.03);
+}
+.pn-row + .pn-row { margin-top: 3px; }
+.pn-row:hover { background: rgba(255, 255, 255, 0.06); }
+.pn-up     { --pn: #4fdc7c; }
+.pn-down   { --pn: #ff6b6b; }
+.pn-adjust { --pn: #ffc44a; }
+.pn-rework { --pn: #6fb6ff; }
+.pn-icon {
+  flex: 0 0 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.pn-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pn-name { font-size: 13px; font-weight: 800; color: #eef2f7; }
+.pn-body { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 12px; color: #b9c1cc; }
+.pn-chg { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.pn-chg em { font-style: normal; color: #8a93a1; }
+.pn-chg s { color: #7c8592; text-decoration-color: rgba(255, 255, 255, 0.35); }
+.pn-chg i { font-style: normal; font-size: 12px; color: #6f7681; }
+.pn-chg b { color: var(--pn); font-weight: 800; }
+.pn-note { line-height: 1.45; }
+.pn-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--pn);
+  padding: 2px 7px 2px 4px;
+  border: 1px solid color-mix(in srgb, var(--pn) 45%, transparent);
+  background: color-mix(in srgb, var(--pn) 12%, transparent);
+}
+.pn-badge i { font-style: normal; font-size: 9px; margin-right: 2px; }
+
+/* ============================================================
+   카드 확률 안내 (js/patchnotes.js openCardRates) — 패치 노트와 같은 창, 같은 결
+   등급마다: 등급 색 별 · 이름 · 종 수 · 등급 확률(막대) → 그 등급 카드 한 장씩 확률
+============================================================ */
+.btn-patch-notes + .btn-card-rates { margin-top: 8px; }
+.btn-card-rates .pn-tag { background: linear-gradient(180deg, #8fe3ff 0%, #3fb2e6 100%); color: #04131c; }
+.btn-card-rates .pn-open { color: #8fe3ff; }
+.card-rates .pn-tag { background: linear-gradient(180deg, #8fe3ff 0%, #3fb2e6 100%); color: #04131c; }
+.card-rates .pn-head { background: linear-gradient(90deg, rgba(110, 200, 255, 0.10) 0%, rgba(110, 200, 255, 0) 60%); }
+
+.cr-intro {
+  margin: 10px 2px 4px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #b9c1cc;
+}
+.cr-intro b { color: #eef2f7; }
+
+.cr-grade { --g: #eef1f6; margin-top: 14px; }
+.cr-common    { --g: #eef1f6; }
+.cr-rare      { --g: #46d866; }
+.cr-epic      { --g: #b86bff; }
+.cr-mythic    { --g: #ff4f4f; }
+.cr-legendary { --g: #ffd23a; }
+.cr-secret    { --g: #a6a6b4; }
+.cr-evolve    { --g: #8fe3ff; }
+
+.cr-grade-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 2px 6px;
+  background: #0e131b;
+}
+.cr-star {
+  width: 12px;
+  height: 12px;
+  background: var(--g);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  filter: drop-shadow(0 0 4px var(--g));
+}
+.cr-grade-name { font-size: 14px; font-weight: 800; color: var(--g); }
+.cr-grade-count { font-size: 11px; color: #8a93a1; }
+.cr-grade-pct {
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 800;
+  color: #f2f5fa;
+  font-variant-numeric: tabular-nums;
+}
+.cr-bar {
+  height: 4px;
+  margin: 0 2px 6px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.cr-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--g) 55%, transparent), var(--g));
+}
+.cr-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-left: 3px solid var(--g);
+  background: rgba(255, 255, 255, 0.03);
+}
+.cr-row + .cr-row { margin-top: 3px; }
+.cr-row:hover { background: rgba(255, 255, 255, 0.06); }
+.cr-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.cr-sub { font-size: 11px; color: #8a93a1; }
+.cr-pct {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--g);
+  font-variant-numeric: tabular-nums;
+}
+.cr-evo-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+.cr-evo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 7px;
+  border-left: 3px solid var(--g);
+  background: rgba(255, 255, 255, 0.03);
 }
