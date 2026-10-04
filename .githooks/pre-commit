@@ -1,0 +1,4 @@
+#!/bin/sh
+# 커밋 전 빠른 검사 (문법 · 규칙 JSON · 키 파일) — 실패하면 커밋하지 않는다.
+# 급할 때만: git commit --no-verify
+exec node scripts/check.mjs

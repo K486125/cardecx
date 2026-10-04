@@ -1,0 +1,33 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>map pan/zoom test</title>
+<!-- mapzoom.mjs 전용 고정 페이지. 방 접속 없이 타일 맵과 board.js만 올려서
+     맵 이동·확대만 따로 본다 (에뮬레이터가 없어도 돌아간다). -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined">
+<link rel="stylesheet" href="css/base.css"><link rel="stylesheet" href="css/game.css"><link rel="stylesheet" href="css/animations.css">
+<style>body{margin:0;background:#0b1224;}
+#screen-game{position:absolute;inset:0;}
+.game-map{top:76px !important;bottom:212px !important;}</style>
+</head><body>
+<div id="screen-game"></div>
+<script>
+// board.js가 쓰는 최소한의 전역
+window.gameStageScale = 1;
+function t(k){return k;}
+function canDropOnTower(){return true;}
+function serverNow(){return Date.now();}
+function showCenterNotice(){}
+</script>
+<script>
+(async () => {
+  const html = await (await fetch('game.html')).text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  document.getElementById('screen-game').appendChild(doc.querySelector('.game-map'));
+  const load = src => new Promise(r => {
+    const s = document.createElement('script'); s.src = src; s.onload = r; document.body.appendChild(s);
+  });
+  await load('js/vendor/three.min.js');
+  await load('js/towers3d.js');
+  await load('js/board.js');
+  initMapPan();
+  window.__ready = 1;
+})();
+</script></body></html>

@@ -2,5 +2,23 @@
 firebase-config.js
 dist/firebase-config.js
 
+# 배포본 — 'firebase.cmd deploy' 때 scripts/build.mjs가 만든다 (predeploy)
+dist/
+
+# Firebase CLI 캐시
+.firebase/
+*-debug.log
+
+# e2e — 실행할 때 만들어지는 것 (소스 복사본 · 스크린샷 · 로그). mapzoom.html은 손으로 만든 고정 파일
+e2e/site/*
+!e2e/site/mapzoom.html
+e2e/*.png
+e2e/tools/*.png
+e2e/*.log
+e2e/database.rules.json
+e2e/__pycache__/
+
+node_modules/
+
 # Claude settings
 .claude/
