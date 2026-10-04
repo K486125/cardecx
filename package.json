@@ -3,6 +3,7 @@
   "private": true,
   "description": "카드 배틀 — 정적 웹 게임 (Firebase Hosting + Realtime Database)",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "build": "node scripts/build.mjs",
     "check": "node scripts/check.mjs",
     "test": "bash e2e/run.sh all",
