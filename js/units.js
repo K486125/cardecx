@@ -39,11 +39,13 @@
      두 화면이 같은 결과를 얻는다. 유닛의 applied 표시로 두 번 깎이지 않는다.
 ════════════════════════════════════════════════════════════ */
 
+// 체력 · 피해 · 낫 간격 · 영혼 수 · 유령 피해는 카드(cards.js grim_reaper.effect.summon)가 원본이다
+const _REAPER_CARD = CARD_DEFINITIONS.grim_reaper.effect.summon;
 const REAPER = {
-  hp:           200,    // 2026-09-30 너프: 300 → 200
-  damage:       67,
-  swingMs:      4000,   // 낫 간격 (2026-09-30 너프: 2초 → 4초)
-  maxSouls:     10,     // 영혼은 10까지만 쌓인다 → 유령 최대 10 (최대 100 피해)
+  hp:           _REAPER_CARD.hp,          // 2026-09-30 너프: 300 → 200
+  damage:       _REAPER_CARD.damage,
+  swingMs:      _REAPER_CARD.interval,    // 낫 간격 (2026-09-30 너프: 2초 → 4초)
+  maxSouls:     _REAPER_CARD.maxSouls,    // 영혼은 10까지만 쌓인다 → 유령 최대 10 (최대 100 피해)
   firstSwingMs: 650,    // 도착하고 첫 낫까지 (들어 올리는 모습이 보이게)
   swingAnimMs:  900,    // 휘두르는 모습 전체 — 피해는 그 한가운데(내리치는 순간)
   walkMs:       1500,   // 한 칸 걷는 데
@@ -57,7 +59,7 @@ const REAPER = {
 // 유령 — 쓰러진 리퍼의 영혼에서 솟는다
 const GHOST = {
   hp:      60,
-  damage:  10,     // 타워에 닿으면 한 번
+  damage:  _REAPER_CARD.ghostDamage,     // 타워에 닿으면 한 번
   fadeMs:  1400,   // 닿은 뒤 타워 쪽으로 스며들며 사라지는 시간
   size:    48,
 };

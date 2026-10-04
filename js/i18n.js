@@ -102,86 +102,21 @@ const STRINGS = {
   grade_mythic:    '신화',
   grade_legendary: '전설',
   grade_secret:    '비밀',
-  card_wooden_sword_name:   '목검',
-  card_rock_name:           '돌',
-  card_wind_name:           '바람',
-  card_earthquake_name:     '지진',
-  card_arrow_name:          '화살',
-  card_flame_name:          '불덩이',
-  card_wave_name:           '침수',
-  card_thorn_name:          '가시',
-  card_brick_name:          '벽돌',
-  card_iron_wall_name:      '철벽',
-  card_cherry_blossom_name: '벚꽃',
-  card_lightning_name:      '번개',
-  card_tornado_name:        '토네이도',
-  card_forest_spirit_name:  '숲의정령',
-  card_starlight_burst_name:'별빛폭발',
-  card_black_hole_name:     '블랙홀',
-  card_nightmare_name:      '악몽',
-  card_ice_deploy_name:     '얼음전개',
-  card_dragon_breath_name:  '용의숨결',
-  card_safe_zone_name:      '안전지대',
-  card_wooden_sword_desc:   '단일 대상 12 피해',
-  card_rock_desc:           '2×2칸 범위 20 피해 · Space로 차면 최대 40 · 셀수록 빠르게 날아간다 (차징 없이는 느리다) · 쇄빙: 언 타워에 30% 더 들어가고 얼음이 깨져 동결이 바로 풀린다',
-  card_wind_desc:           '단일 24 피해 · 상대 에너지 -5 · 상성: 상대 토템(숲의정령·흰꽃)이 더 가까우면 토템을 쳐 남은 시간 -2초 (2초 이하로 남았으면 무너진다) — 단일이라 토템과 타워 중 하나만',
-  card_earthquake_desc:     '3×3칸 범위 · 땅울림 0.7초 뒤 3초간 매초 9 피해 (총 27) · 상성: 범위 안 상대 토템의 남은 시간 -2초 (2초 이하로 남았으면 무너지고 회복도 멈춘다) · 쇄빙: 언 타워에 30% 더 들어가고 얼음이 깨져 동결이 바로 풀린다',
-  card_collapse_name:       '붕괴',
-  card_collapse_desc:       '3칸 폭 세로 범위 · 땅울림 0.5초 뒤 즉시 25 피해 · 범위 안 토템 파괴 (2초간 새 토템도 무너짐) · 쇄빙: 언 타워에 30% 더 들어가고 얼음이 깨져 동결이 바로 풀린다',
-  card_arrow_desc:          '일자 3칸 · 처음 닿는 타워 21 피해 · Space로 차면 최대 39 · 내 진영에서 쏘면 왼쪽으로 날아가 길에 선 상대 유닛(그림리퍼)만 맞힌다',
-  card_love_arrow_name:     '사랑의 화살',
-  card_love_arrow_desc:     '일자 3칸 · 상대 진영: 하트가 깨지며 즉시 70 피해 (길의 상대 유닛도) / 내 진영에서 쏘면 회복만: 하트가 그려지며 80 회복',
-  card_flame_desc:          '2×2칸 범위로 불덩이를 던진다. 떨어지는 순간 28 피해, 이어서 불길 속에서 0.5초마다 6 피해 5회 (총 58) · 힐 밴: 범위 안 상대 토템에 불이 붙어 타 버린다 · 내가 얼린 상대 타워에 떨어지면 불덩이 피해가 절반으로 들어가고 얼음이 반쯤 녹아 남은 동결 피해 50% 감소 · 타는 동안 그 자리에 세운 상대 토템도 재가 된다 · 물(침수·파도)이 닿으면 꺼진다',
-  card_wave_desc:           '아무 진영에나 놓는다. 4×10칸 범위에 물이 위에서 아래로 쏟아져 닿는 상대 대상에 30 피해, 이어서 잠긴 대상은 반쯤 가라앉아 3초 동안 0.5초마다 5 피해 · 닿은 불을 끈다 · 침수당하는 동안 젖은 쪽의 회복(벚꽃·흰꽃·숲의정령)이 50% 늘어난다 — 내 진영에 쓰면 내 회복이 는다',
-  card_thorn_desc:          '2×2칸 범위. 땅에서 가시가 튀어나와 45 피해, 박힌 채로 0.5초마다 7 피해 4회 (총 73) · 상성: 범위 안 상대 토템(숲의정령·흰꽃)은 산산조각 나고, 가시가 박혀 있는 동안 그 자리에 세운 토템도 부서진다',
-  card_brick_desc:          '내 타워 칸에 놓으면 타워를 둘러싼 벽돌 방어막이 6초 동안 받는 피해 40% 감소. 한 타워에 방어막은 하나 — 또 놓으면 6초 연장',
-  card_iron_wall_desc:      '내 타워 칸에 놓으면 강철 방벽이 8초 동안 직선 공격(화살·목검·듀얼 검·바람·토네이도·톱·파도) 피해 80%, 그 밖의 범위 공격 피해 50% 감소. 한 타워에 방어막은 하나 — 또 놓으면 8초 연장',
-  card_cherry_blossom_desc: '단일 5초간 매초 15 치유 (총 75)',
-  card_lightning_desc:      '범위(3) 4초간 매초 12 피해 (총 48) · 감전: 물(침수·파도 · 폭염에 녹은 얼음물)에 젖은 타워는 50% 더',
-  card_tornado_desc:        '내 진영 타일에 설치 · 전진하며 타워 타격 (멀리서 올수록 강함) · 닿는 줄의 상대 토템(숲의정령·흰꽃)을 날려 버린다 (2초간 새 토템도 날아감)',
-  card_forest_spirit_desc:  '범위(3) 5초간 매초 15 치유 (총 75)',
-  card_starlight_burst_desc:'범위(3) 5초간 매초 12 피해 (총 60)',
-  card_black_hole_desc:     '범위(3) 5초간 매초 14 피해 (총 70)',
-  card_nightmare_desc:      '범위(3) 적 타워 받는 피해 35% 증가 (8초)',
-  card_dragon_breath_desc:  '단일 5초간 매초 70 피해 (총 350)',
-  card_safe_zone_desc:      '범위(3) 5초간 모든 피해 면역',
-  card_doom_seal_name:       '파멸의낙인',
-  card_doom_seal_desc:       '단일 6초간 적 타워 받는 피해 100% 증가',
-  card_apocalypse_name:      '아포칼립스',
-  card_apocalypse_desc:      '상대 타워 3개 전부에 즉시 220 피해 (총 660)',
-  card_grim_reaper_name:     '그림리퍼',
-  card_grim_reaper_desc:     '내 진영 칸에 그림리퍼(체력 200) 소환 — 같은 줄 상대 타워 앞까지 걸어가 4초마다 낫으로 67 피해, 벨 때마다 영혼 +1(최대 10). 상대 리퍼와 만나면 서로 싸운다. 쓰러지면 영혼 수만큼 유령이 상대 진영에 솟아 타워에 닿으면 10 피해',
-  card_pumpkin_carriage_name:'호박마차',
-  card_pumpkin_carriage_desc:'5초간 매초 에너지 10 충전 (에너지 바 주황색)',
-  card_viper_name:           '독사',
-  card_viper_desc:           '단일 즉시 120 피해 + 1초마다 20 피해(5회) + 대상 힐량 20% 감소(5초)',
-  card_mirror_name:          '반사',
-  card_mirror_desc:          '단일 6초간 받은 피해 최초 1회 80% 추가하여 적 킹에 반사',
-  card_wave_evo_name:           '파도',
-  card_wave_evo_desc:           '아무 열에나 놓으면 3칸 폭 파도가 상대 진영 끝까지 밀려가며, 파도 안에 든 상대 대상에게 0.5초마다 22 피해 · 지나간 자리의 불을 끈다 · 파도가 닿는 동안 젖은 쪽의 회복(벚꽃·흰꽃·숲의정령)이 50% 늘어난다',
-  card_fire_evo_name:           '폭염',
-  card_fire_evo_desc:           '3×7칸 범위에 화염 폭발 49 피해 → 범위 안 대상이 불타며 0.5초마다 9 피해 5회 → 이어서 6초 동안 열기가 올라와 그 칸의 모든 대상(타워·소환 유닛)이 더위 상태로 모든 카드 피해를 15% 더 받고 회복은 25% 덜 받는다 · 힐 밴: 범위 안 상대 토템이 타 버리고, 열기 속 토템은 말라 비틀어진다 · 내가 얼린 상대 타워는 폭염 피해 없이 얼음이 다 녹아 동결이 풀리고, 녹은 물이 3×3칸에 3초 동안 고인다 (젖음 — 감전 · 그 동안 상대 회복 +50%) · 불길이 타는 동안 그 자리에 세운 상대 토템도 재가 된다 · 물이 닿으면 불과 열기가 꺼진다',
-  card_thorn_evo_name:          '톱',
-  card_thorn_evo_desc:          '커서 가까이의 대상 하나(강조됨)를 클릭하면 바로 그쪽에서 다가가 썬다 — 타워는 6초 동안 0.5초마다 7 피해 (총 84) · 상성: 상대 토템(숲의정령·흰꽃)은 반토막 나 쓰러진다 (회복도 멈춘다 · 톱은 거기서 끝)',
-  card_cherry_blossom_evo_name: '흰꽃',
-  card_cherry_blossom_evo_desc: '범위(3) 1초마다 12 치유(5회, 총 60)',
-  card_starlight_burst_evo_name:'별똥별',
-  card_starlight_burst_evo_desc:'범위(3) 0.5초마다 12 피해(5회, 총 60) + 2초 후 즉발 27 피해 | 특성: 사용 중 모든 어택 카드 피해 +20%',
-  card_ice_deploy_desc:      '4×4칸 범위의 모든 대상을 얼린다 — 타워는 밑동부터 꼭대기까지 얼음이 차올라 10초 동안 1초마다 12 피해, 언 타워가 있으면 상대 카드 덱 10초 동결 (어떤 카드도 못 쓴다). 바닥 얼음은 타워가 다 얼면 사라진다. 소환 유닛은 그동안 기절',
 };
 
 function t(key) {
   return STRINGS[key] ?? key;
 }
 
-/** 카드 이름/설명 조회 (fallback: 카드 정의 원본 → 키 문자열) */
+/**
+ * 카드 이름/설명 조회 — 카드 정의(cards.js)가 원본이다. 다른 언어를 붙이면 STRINGS의 card_{id}_{field}가 먼저 쓰인다.
+ * 설명의 {식} 자리는 카드 값으로 채운다 (cards.js cardFillDesc)
+ */
 function tCard(cardId, field) {
   const key = `card_${cardId}_${field}`;
-  if (STRINGS[key] !== undefined) return STRINGS[key];
-  if (typeof CARD_DEFINITIONS !== 'undefined' && CARD_DEFINITIONS[cardId]) {
-    return CARD_DEFINITIONS[cardId][field] ?? key;
-  }
-  return key;
+  const card = typeof CARD_DEFINITIONS !== 'undefined' ? CARD_DEFINITIONS[cardId] : null;
+  const text = STRINGS[key] !== undefined ? STRINGS[key] : card?.[field] ?? key;
+  return field === 'desc' && card && typeof cardFillDesc === 'function' ? cardFillDesc(text, card) : text;
 }
 
 /** [data-i18n] 요소의 textContent, [data-i18n-placeholder] 요소의 placeholder 적용 */

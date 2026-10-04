@@ -200,7 +200,7 @@ function _botTotemWorth(t, how) {
   if (how === 'remove' || t.leftMs <= TOTEM_CUT_MS_BOT) return t.heal;
   return Math.min(t.heal, t.perSec * TOTEM_CUT_MS_BOT / 1000);
 }
-const TOTEM_CUT_MS_BOT = 2000;   // board.js TOTEM_CUT_MS와 같다
+const TOTEM_CUT_MS_BOT = SYNERGY.totemCutMs;   // board.js TOTEM_CUT_MS와 같다 (cards.js SYNERGY)
 
 /** 범위 카드를 그 타워에 썼을 때 범위에 드는 상대 토템의 값 (이 화면 칸 — 상대는 왼쪽) */
 function _botAreaTotemBonus(card, pos, totems) {

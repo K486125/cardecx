@@ -418,9 +418,11 @@ function towerAdjustHeal(t, heal, now, withered = false) {
 }
 
 // ── 상성 (2026-10-02) ───────────────────────────────────────
-const HEAT_HEAL_CUT = 0.25;                                   // 더위 속 회복 -25%
+// 별똥별 특성 — 사용 중 모든 어택 카드 피해 +20% (cards.js starlight_burst_evo.trait)
+const STARLIGHT_AMP = 1 + CARD_DEFINITIONS.starlight_burst_evo.trait.attackAmpPct / 100;
+const HEAT_HEAL_CUT = SYNERGY.heatHealCutPct / 100;            // 더위 속 회복 -25% (cards.js SYNERGY)
 const SHATTER_CARDS = new Set(['earthquake', 'collapse', 'rock', 'rock_hell']);
-const SHATTER_MUL = 1.3;                                      // 언 타워에 땅·돌 카드 +30%
+const SHATTER_MUL = 1 + SYNERGY.shatterPct / 100;             // 언 타워에 땅·돌 카드 +30%
 
 // ── 얼음 (얼음전개, 2026-10-02 리워크 2) ─────────────────────
 // 타워 필드: frozenFrom · frozenUntil · frozenMelt
@@ -429,8 +431,8 @@ const SHATTER_MUL = 1.3;                                      // 언 타워에 �
 //               3 — 땅·돌 카드에 깨졌다 (쇄빙)
 //   2 · 3이면 frozenUntil = 풀린 시각.
 // 언 동안 맞은 쪽은 카드를 하나도 못 쓴다 — 얼음을 녹이는 건 얼린 쪽(상대)의 불뿐이다.
-const ICE_FIRE_CUT = 0.5;                                     // 언 타워에 불덩이 피해 50%
-const ICE_POOL_MS  = 3000;                                    // 폭염에 녹은 물이 마르는 시간
+const ICE_FIRE_CUT = SYNERGY.iceFireCutPct / 100;             // 언 타워에 불덩이 피해 50%
+const ICE_POOL_MS  = SYNERGY.icePoolMs;                        // 폭염에 녹은 물이 마르는 시간
 const ICE_MELT_BY  = { flame: 1, fire_evo: 2 };               // 불덩이 반쯤 · 폭염 다
 
 /** 얼음전개로 얼어 있는가 */
@@ -550,7 +552,7 @@ function applyCardUse(actingPlayer, slotIndex, newEnergy, targetPlayer, targetPo
     updates[`gameState/${actingPlayer}/energyBurstPerTick`] = effect.energyBurst.perTick;
   }
 
-  // 시전자 쪽 피해 보정 — 별똥별 evo 특성(어택 카드 +20%), 오버타임 승수
+  // 시전자 쪽 피해 보정 — 별똥별 evo 특성(어택 카드 +20% — STARLIGHT_AMP), 오버타임 승수
   const starlightUntil = currentGameState?.[actingPlayer]?.starlightBurstActiveUntil;
   const starlightOn    = starlightUntil && now < starlightUntil && card.type === 'attack';
   const overtimeMul    = window.overtimeMultiplier > 1.0 ? window.overtimeMultiplier : 1;
@@ -716,7 +718,7 @@ function applyCardUse(actingPlayer, slotIndex, newEnergy, targetPlayer, targetPo
         } else {
           let dmg = towerAdjustDamage(t, effect.damage, now,
             { cardId: card.id, heat: towerHeatPercent(currentGameState, targetPlayer, pos, now) });
-          if (starlightOn)     dmg = Math.round(dmg * 1.2);
+          if (starlightOn)     dmg = Math.round(dmg * STARLIGHT_AMP);
           if (overtimeMul > 1) dmg = Math.round(dmg * overtimeMul);
 
           if (t.mirrorUntil > now) {

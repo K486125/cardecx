@@ -68,11 +68,11 @@ function computeDotTick(dot, tower, gs, tickNo, now) {
   if (tower.immunityUntil > now) return { kind: 'immune', amount: 0 };
 
   let dmg = dot.dmgPerTick;
-  if (dot.cardId === 'ice_deploy' && tower.frozenMelt === 1) dmg = Math.round(dmg * 0.5);
+  if (dot.cardId === 'ice_deploy' && tower.frozenMelt === 1) dmg = Math.round(dmg * (1 - SYNERGY.iceHalfMeltCutPct / 100));
   // 감전 (2026-10-02 상성) — 젖은 타워(침수·파도 · 폭염에 녹은 얼음물)는 번개 +50%
-  if (dot.cardId === 'lightning' && typeof towerSoaked === 'function' && towerSoaked(dot.targetPlayer, dot.targetTower, now)) dmg = Math.round(dmg * 1.5);
+  if (dot.cardId === 'lightning' && typeof towerSoaked === 'function' && towerSoaked(dot.targetPlayer, dot.targetTower, now)) dmg = Math.round(dmg * (1 + SYNERGY.zapPct / 100));
   // 별똥별 evo 특성: 시전자가 starlightBurstActiveUntil 중이면 DOT 피해 +20% (자기 자신 제외)
-  if (dot.cardId !== 'starlight_burst_evo' && gs?.[dot.sourcePlayer]?.starlightBurstActiveUntil > now) dmg = Math.round(dmg * 1.2);
+  if (dot.cardId !== 'starlight_burst_evo' && gs?.[dot.sourcePlayer]?.starlightBurstActiveUntil > now) dmg = Math.round(dmg * STARLIGHT_AMP);
   dmg = towerAdjustDamage(tower, dmg, now,
     { cardId: dot.cardId, heat: typeof towerHeatPercent === 'function' ? towerHeatPercent(gs, dot.targetPlayer, dot.targetTower, now) : 0 });
   // 오버타임 피해 승수

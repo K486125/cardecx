@@ -55,6 +55,20 @@ const GRADE_EMOJI = {
  *   healReduction    → { percent, duration(ms) }  힐량 감소 디버프
  *   reflect          → { percent, duration(ms) }  피해 반사 방어막
  */
+// ── 상성 수치 (2026-10-04) ───────────────────────────────────
+// 코드(sync · effects · board · bot)와 카드 설명이 모두 여기서 읽는다 — 값을 바꾸면 설명도 같이 바뀐다
+const SYNERGY = {
+  shatterPct:        30,     // 쇄빙 — 언 타워에 땅·돌 카드(지진 · 붕괴 · 돌 · 바위 지옥) 피해 +30%
+  zapPct:            50,     // 감전 — 젖은 타워에 번개 +50%
+  soakHealPct:       50,     // 젖은 쪽 회복(벚꽃 · 흰꽃 · 숲의정령) +50%
+  heatHealCutPct:    25,     // 더위(폭염의 열기) 속 회복 -25%
+  iceFireCutPct:     50,     // 언 타워에 떨어진 불덩이는 피해의 50%만
+  iceHalfMeltCutPct: 50,     // 불덩이에 반쯤 녹은 얼음 — 남은 동결 피해 -50%
+  icePoolMs:       3000,     // 폭염에 녹은 얼음물이 고여 있는 시간
+  totemCutMs:      2000,     // 지진 · 바람이 줄이는 토템 시간 (이만큼도 안 남았으면 무너진다)
+  totemLockMs:     2000,     // 토네이도 · 붕괴 뒤 새 토템을 못 세우는 시간
+};
+
 const CARD_DEFINITIONS = {
 
   // ── 일반 ───────────────────────────────────────────────
@@ -70,7 +84,7 @@ const CARD_DEFINITIONS = {
     type: 'attack',
     targeting: 'single',
     effect: { damage: 12 },
-    desc: '단일 대상 12 피해'
+    desc: '단일 대상 {e.damage} 피해'
   },
   // 투척 — 꾹 눌러 차징하면 더 아프고 더 빠르게 날아간다 (board.js CAST_STYLES.stone)
   rock: {
@@ -83,7 +97,7 @@ const CARD_DEFINITIONS = {
     type: 'attack',
     targeting: 'single',
     effect: { damage: 20 },
-    desc: '2×2칸 범위 20 피해 · Space로 차면 최대 40 · 셀수록 빠르게 날아간다 (차징 없이는 느리다) · 쇄빙: 언 타워에 30% 더 들어가고 얼음이 깨져 동결이 바로 풀린다'
+    desc: '타일 한 칸 {e.damage} 피해 · Space로 차면 최대 {st.charge.damage.at(-1)} · 셀수록 빠르게 날아간다 (차징 없이는 느리다) · 쇄빙: 언 타워에 {S.shatterPct}% 더 들어가고 얼음이 깨져 동결이 바로 풀린다'
   },
   // 바람 스매시 — 앞으로 두 타일 길이의 일자 사거리, 타워 하나만 친다.
   // 피해와 함께 상대 에너지를 5 깎는다 (board.js CAST_STYLES.windsmash)
@@ -97,7 +111,7 @@ const CARD_DEFINITIONS = {
     type: 'attack',
     targeting: 'single',
     effect: { damage: 24, energyDrain: 5 },
-    desc: '단일 24 피해 · 상대 에너지 -5 · 상성: 상대 토템(숲의정령·흰꽃)이 더 가까우면 토템을 쳐 남은 시간 -2초 (2초 이하로 남았으면 무너진다) — 단일이라 토템과 타워 중 하나만'
+    desc: '단일 {e.damage} 피해 · 상대 에너지 -{e.energyDrain} · 상성: 상대 토템(숲의정령·흰꽃)이 더 가까우면 토템을 쳐 남은 시간 -{sec(S.totemCutMs)}초 ({sec(S.totemCutMs)}초 이하로 남았으면 무너진다) — 단일이라 토템과 타워 중 하나만'
   },
   // 지진 — 3×3칸 범위. 0.7초 땅울림 뒤 3초 동안 칸이 무너지며 1초마다 11 피해.
   // 범위에 닿은 타워는 전부 맞는다 (board.js CAST_STYLES.quake — 지연 0.7초가 거기서 온다)
@@ -111,7 +125,7 @@ const CARD_DEFINITIONS = {
     type: 'attack',
     targeting: 'range2',
     effect: { dot: { dmgPerTick: 9, ticks: 3, tickInterval: 1000 } },
-    desc: '3×3칸 범위 · 땅울림 0.7초 뒤 3초간 매초 9 피해 (총 27) · 상성: 범위 안 상대 토템의 남은 시간 -2초 (2초 이하로 남았으면 무너지고 회복도 멈춘다) · 쇄빙: 언 타워에 30% 더 들어가고 얼음이 깨져 동결이 바로 풀린다'
+    desc: '{st.cols}×{st.rows}칸 범위 · 땅울림 {sec(st.hitMs)}초 뒤 {sec(dotMs(e.dot))}초간 {per(e.dot.tickInterval)} {e.dot.dmgPerTick} 피해 (총 {tot(e)}) · 상성: 범위 안 상대 토템의 남은 시간 -{sec(S.totemCutMs)}초 ({sec(S.totemCutMs)}초 이하로 남았으면 무너지고 회복도 멈춘다) · 쇄빙: 언 타워에 {S.shatterPct}% 더 들어가고 얼음이 깨져 동결이 바로 풀린다'
   },
   // 화살 — 커서에서 앞으로 3칸 길이·1칸 폭의 일자 사거리. 화살이 날아가다 처음 닿는 타워 하나를 맞힌다.
   // Space로 최대 2초 차징: 21 → 39. 차징과 관계없이 사거리 끝까지 1.2초 (board.js CAST_STYLES.arrow)
@@ -125,7 +139,7 @@ const CARD_DEFINITIONS = {
     type: 'attack',
     targeting: 'single',
     effect: { damage: 21 },
-    desc: '일자 3칸 · 처음 닿는 타워 21 피해 · Space로 차면 최대 39 · 내 진영에서 쏘면 왼쪽으로 날아가 길에 선 상대 유닛(그림리퍼)만 맞힌다'
+    desc: '일자 3칸 · 처음 닿는 타워 {e.damage} 피해 · Space로 차면 최대 {st.charge.damage.at(-1)} · 내 진영에서 쏘면 왼쪽으로 날아가 길에 선 상대 유닛(그림리퍼)만 맞힌다'
   },
 
   // ── 진화 (일반 등급 카드 5회 사용 후 변환) ────────────
@@ -146,7 +160,7 @@ const CARD_DEFINITIONS = {
         { dmgPerTick: 8, ticks: 1, tickInterval: 600 }
       ]
     },
-    desc: '단일 돌진 14 피해 + X 베기 8+8 (총 30) · 상성: 상대 토템(숲의정령·흰꽃)이 더 가까우면 토템을 베어 없앤다 — 단일이라 토템과 타워 중 하나만',
+    desc: '단일 돌진 {e.damage} 피해 + X 베기 {e.dot[0].dmgPerTick}+{e.dot[1].dmgPerTick} (총 {tot(e)}) · 상성: 상대 토템(숲의정령·흰꽃)이 더 가까우면 토템을 베어 없앤다 — 단일이라 토템과 타워 중 하나만',
     isEvolution: true
   },
   // 돌의 진화 — 차징 없이 한 번에 세 덩이를 던진다.
@@ -161,7 +175,7 @@ const CARD_DEFINITIONS = {
     type: 'attack',
     targeting: 'range3',
     effect: { damage: 30, dot: { dmgPerTick: 5, ticks: 3, tickInterval: 600 } },
-    desc: '상대 타워 셋에 한 덩이씩 · 14 / 18 / 22 피해 + 돌가루 3회 (부서진 타워 몫은 킹에 절반) · 쇄빙: 언 타워에 30% 더 들어가고 얼음이 깨져 동결이 바로 풀린다',
+    desc: '상대 타워 셋에 한 덩이씩 · {st.shots.map(x => x.damage).join(\' / \')} 피해 + 돌가루 {st.shots[0].dot.ticks}회 (부서진 타워 몫은 킹에 절반) · 쇄빙: 언 타워에 {S.shatterPct}% 더 들어가고 얼음이 깨져 동결이 바로 풀린다',
     isEvolution: true
   },
   // 바람의 진화 — 내 진영 타일에 설치하면 작은 소용돌이가 점점 커지고 빨라지며
@@ -177,7 +191,7 @@ const CARD_DEFINITIONS = {
     type: 'attack',
     targeting: 'range2',
     effect: { damage: 20 },
-    desc: '내 진영 타일에 설치 · 전진하며 타워 타격 (멀리서 올수록 강함) · 닿는 줄의 상대 토템(숲의정령·흰꽃)을 날려 버린다 (2초간 새 토템도 날아감)',
+    desc: '내 진영 타일에 설치 · 전진하며 타워 타격 (멀리서 올수록 강함) · 닿는 줄의 상대 토템(숲의정령·흰꽃)을 날려 버린다 ({sec(S.totemLockMs)}초간 새 토템도 날아감)',
     isEvolution: true
   },
   // 붕괴 — 지진의 진화 (예전 '파멸 조각'을 대신한다). 3칸 폭으로 맵 세로 전체가 범위라
@@ -194,7 +208,7 @@ const CARD_DEFINITIONS = {
     type: 'attack',
     targeting: 'range3',
     effect: { damage: 25 },
-    desc: '3칸 폭 세로 범위 · 땅울림 0.5초 뒤 즉시 25 피해 · 범위 안 토템 파괴 (2초간 새 토템도 무너짐) · 쇄빙: 언 타워에 30% 더 들어가고 얼음이 깨져 동결이 바로 풀린다',
+    desc: '3칸 폭 세로 범위 · 땅울림 {sec(st.hitMs)}초 뒤 즉시 {e.damage} 피해 · 범위 안 토템 파괴 ({sec(st.lockMs)}초간 새 토템도 무너짐) · 쇄빙: 언 타워에 {S.shatterPct}% 더 들어가고 얼음이 깨져 동결이 바로 풀린다',
     isEvolution: true
   },
   // 사랑의 화살 — 화살의 진화 (예전 '큐피드 화살'). 차징 없이 1초 만에 일자 3칸을 날아간다.
@@ -215,7 +229,7 @@ const CARD_DEFINITIONS = {
         support: { heal: 80 }
       }
     },
-    desc: '일자 3칸 · 상대 진영: 하트가 깨지며 즉시 70 피해 (길의 상대 유닛도) / 내 진영에서 쏘면 회복만: 하트가 그려지며 80 회복',
+    desc: '일자 3칸 · 상대 진영: 하트가 깨지며 즉시 {e.dualEffect.attack.damage} 피해 (길의 상대 유닛도) / 내 진영에서 쏘면 회복만: 하트가 그려지며 {e.dualEffect.support.heal} 회복',
     isEvolution: true
   },
 
@@ -232,7 +246,7 @@ const CARD_DEFINITIONS = {
     targeting: 'range3',
     cast: 'wave',
     effect: { dot: { dmgPerTick: 22, ticks: 3, tickInterval: 500 } },
-    desc: '아무 열에나 놓으면 3칸 폭 파도가 상대 진영 끝까지 밀려가며, 파도 안에 든 상대 대상에게 0.5초마다 22 피해 · 지나간 자리의 불을 끈다 · 파도가 닿는 동안 젖은 쪽의 회복(벚꽃·흰꽃·숲의정령)이 50% 늘어난다',
+    desc: '아무 열에나 놓으면 {st.cols}칸 폭 파도가 상대 진영 끝까지 밀려가며, 파도 안에 든 상대 대상에게 {sec(e.dot.tickInterval)}초마다 {e.dot.dmgPerTick} 피해 · 지나간 자리의 불을 끈다 · 파도가 닿는 동안 젖은 쪽의 회복(벚꽃·흰꽃·숲의정령)이 {S.soakHealPct}% 늘어난다',
     isEvolution: true
   },
   // 폭염 — 불덩이의 진화 (2026-10-02 리워크, 예전 '불꽃'). 3×7칸 범위.
@@ -249,7 +263,7 @@ const CARD_DEFINITIONS = {
     targeting: 'single',
     cast: 'heatwave',
     effect: { damage: 49, dot: { dmgPerTick: 9, ticks: 5, tickInterval: 500 } },
-    desc: '3×7칸 범위에 화염 폭발 49 피해 → 범위 안 대상이 불타며 0.5초마다 9 피해 5회 → 이어서 6초 동안 열기가 올라와 그 칸의 모든 대상(타워·소환 유닛)이 더위 상태로 모든 카드 피해를 15% 더 받고 회복은 25% 덜 받는다 · 힐 밴: 범위 안 상대 토템이 타 버리고, 열기 속 토템은 말라 비틀어진다 · 내가 얼린 상대 타워는 폭염 피해 없이 얼음이 다 녹아 동결이 풀리고, 녹은 물이 3×3칸에 3초 동안 고인다 (젖음 — 감전 · 그 동안 상대 회복 +50%) · 불길이 타는 동안 그 자리에 세운 상대 토템도 재가 된다 · 물이 닿으면 불과 열기가 꺼진다',
+    desc: '{st.cols}×{st.rows}칸 범위에 화염 폭발 {e.damage} 피해 → 범위 안 대상이 불타며 {sec(e.dot.tickInterval)}초마다 {e.dot.dmgPerTick} 피해 {e.dot.ticks}회 → 이어서 {sec(st.heatMs)}초 동안 열기가 올라와 그 칸의 모든 대상(타워·소환 유닛)이 더위 상태로 모든 카드 피해를 {st.heatPercent}% 더 받고 회복은 {S.heatHealCutPct}% 덜 받는다 · 힐 밴: 범위 안 상대 토템이 타 버리고, 열기 속 토템은 말라 비틀어진다 · 내가 얼린 상대 타워는 폭염 피해 없이 얼음이 다 녹아 동결이 풀리고, 녹은 물이 3×3칸에 {sec(S.icePoolMs)}초 동안 고인다 (젖음 — 감전 · 그 동안 상대 회복 +{S.soakHealPct}%) · 불길이 타는 동안 그 자리에 세운 상대 토템도 재가 된다 · 물이 닿으면 불과 열기가 꺼진다',
     isEvolution: true
   },
   // 철벽 — 벽돌의 진화. 벽돌처럼 내 타워 칸에 놓으면 강철 방벽이 타워를 둘러싼다 (2026-10-02).
@@ -264,7 +278,7 @@ const CARD_DEFINITIONS = {
     targeting: 'single',
     cast: 'ironwall',
     effect: { damageReduction: { percent: 50, linePercent: 80, duration: 8000 } },
-    desc: '내 타워 칸에 놓으면 강철 방벽이 8초 동안 직선 공격(화살·목검·듀얼 검·바람·토네이도·톱·파도) 피해 80%, 그 밖의 범위 공격 피해 50% 감소. 한 타워에 방어막은 하나 — 또 놓으면 8초 연장',
+    desc: '내 타워 칸에 놓으면 강철 방벽이 {sec(e.damageReduction.duration)}초 동안 직선 공격(화살·목검·듀얼 검·바람·토네이도·톱·파도) 피해 {e.damageReduction.linePercent}%, 그 밖의 범위 공격 피해 {e.damageReduction.percent}% 감소. 한 타워에 방어막은 하나 — 또 놓으면 {sec(e.damageReduction.duration)}초 연장',
     isEvolution: true
   },
   // 톱 — 가시의 진화 (2026-10-03 리워크). 커서 가까이의 가장 가까운 대상 하나 — 클릭하면 바로 끝까지 저절로 썬다 (차징 · 게이지 없음).
@@ -279,7 +293,7 @@ const CARD_DEFINITIONS = {
     targeting: 'single',
     cast: 'saw',
     effect: { dot: { dmgPerTick: 7, ticks: 12, tickInterval: 500 } },
-    desc: '커서 가까이의 대상 하나(강조됨)를 클릭하면 바로 그쪽에서 다가가 썬다 — 타워는 6초 동안 0.5초마다 7 피해 (총 84) · 상성: 상대 토템(숲의정령·흰꽃)은 반토막 나 쓰러진다 (회복도 멈춘다 · 톱은 거기서 끝)',
+    desc: '커서 가까이의 대상 하나(강조됨)를 클릭하면 바로 그쪽에서 다가가 썬다 — 타워는 {sec(dotMs(e.dot))}초 동안 {sec(e.dot.tickInterval)}초마다 {e.dot.dmgPerTick} 피해 (총 {tot(e)}) · 상성: 상대 토템(숲의정령·흰꽃)은 반토막 나 쓰러진다 (회복도 멈춘다 · 톱은 거기서 끝)',
     isEvolution: true
   },
   cherry_blossom_evo: {
@@ -292,7 +306,7 @@ const CARD_DEFINITIONS = {
     type: 'heal',
     targeting: 'range3',
     effect: { hot: { healPerTick: 12, ticks: 5, tickInterval: 1000 } },
-    desc: '범위(3) 1초마다 12 치유(5회, 총 60)',
+    desc: '범위(3) {sec(e.hot.tickInterval)}초마다 {e.hot.healPerTick} 치유({e.hot.ticks}회, 총 {tot(e)})',
     isEvolution: true
   },
 
@@ -309,7 +323,7 @@ const CARD_DEFINITIONS = {
     targeting: 'single',
     cast: 'fireball',
     effect: { damage: 28, dot: { dmgPerTick: 6, ticks: 5, tickInterval: 500 } },
-    desc: '2×2칸 범위로 불덩이를 던진다. 떨어지는 순간 28 피해, 이어서 불길 속에서 0.5초마다 6 피해 5회 (총 58) · 힐 밴: 범위 안 상대 토템에 불이 붙어 타 버린다 · 내가 얼린 상대 타워에 떨어지면 불덩이 피해가 절반으로 들어가고 얼음이 반쯤 녹아 남은 동결 피해 50% 감소 · 타는 동안 그 자리에 세운 상대 토템도 재가 된다 · 물(침수·파도)이 닿으면 꺼진다'
+    desc: '{st.cols}×{st.rows}칸 범위로 불덩이를 던진다. 떨어지는 순간 {e.damage} 피해, 이어서 불길 속에서 {sec(e.dot.tickInterval)}초마다 {e.dot.dmgPerTick} 피해 {e.dot.ticks}회 (총 {tot(e)}) · 힐 밴: 범위 안 상대 토템에 불이 붙어 타 버린다 · 내가 얼린 상대 타워에 떨어지면 불덩이 피해가 {S.iceFireCutPct}%만 들어가고 얼음이 반쯤 녹아 남은 동결 피해 {S.iceHalfMeltCutPct}% 감소 · 타는 동안 그 자리에 세운 상대 토템도 재가 된다 · 물(침수·파도)이 닿으면 꺼진다'
   },
   // 침수 — 물방울 리워크 (2026-10-01). 4×10칸 범위를 물이 위에서 아래로 1초 만에 쓸고 간다.
   // 물살이 닿는 순간 30, 다 흐른 뒤 잠긴 대상은 3초 동안 0.5초마다 5. 실제 시각은 board.js castFloodPlan
@@ -323,7 +337,7 @@ const CARD_DEFINITIONS = {
     targeting: 'range3',
     cast: 'flood',
     effect: { damage: 30, dot: { dmgPerTick: 5, ticks: 6, tickInterval: 500 } },
-    desc: '아무 진영에나 놓는다. 4×10칸 범위에 물이 위에서 아래로 쏟아져 닿는 상대 대상에 30 피해, 이어서 잠긴 대상은 반쯤 가라앉아 3초 동안 0.5초마다 5 피해 · 닿은 불을 끈다 · 침수당하는 동안 젖은 쪽의 회복(벚꽃·흰꽃·숲의정령)이 50% 늘어난다 — 내 진영에 쓰면 내 회복이 는다'
+    desc: '아무 진영에나 놓는다. {st.cols}×{st.rows}칸 범위에 물이 위에서 아래로 쏟아져 닿는 상대 대상에 {e.damage} 피해, 이어서 잠긴 대상은 반쯤 가라앉아 {sec(dotMs(e.dot))}초 동안 {sec(e.dot.tickInterval)}초마다 {e.dot.dmgPerTick} 피해 · 닿은 불을 끈다 · 침수당하는 동안 젖은 쪽의 회복(벚꽃·흰꽃·숲의정령)이 {S.soakHealPct}% 늘어난다 — 내 진영에 쓰면 내 회복이 는다'
   },
   // 가시 (2026-10-01 리워크) — 2×2칸. 타워 밑에서 가시가 튀어나와 박힌다
   thorn: {
@@ -336,7 +350,7 @@ const CARD_DEFINITIONS = {
     targeting: 'single',
     cast: 'thorn',
     effect: { damage: 45, dot: { dmgPerTick: 7, ticks: 4, tickInterval: 500 } },
-    desc: '2×2칸 범위. 땅에서 가시가 튀어나와 45 피해, 박힌 채로 0.5초마다 7 피해 4회 (총 73) · 상성: 범위 안 상대 토템(숲의정령·흰꽃)은 산산조각 나고, 가시가 박혀 있는 동안 그 자리에 세운 토템도 부서진다'
+    desc: '{st.cols}×{st.rows}칸 범위. 땅에서 가시가 튀어나와 {e.damage} 피해, 박힌 채로 {sec(e.dot.tickInterval)}초마다 {e.dot.dmgPerTick} 피해 {e.dot.ticks}회 (총 {tot(e)}) · 상성: 범위 안 상대 토템(숲의정령·흰꽃)은 산산조각 나고, 가시가 박혀 있는 동안 그 자리에 세운 토템도 부서진다'
   },
   // 벽돌 — 내 타워 칸 하나에 놓으면 타워를 얇은 벽돌 방어막이 둘러싼다 (2026-10-02). 막는 방식은 그대로 40% · 6초
   brick: {
@@ -349,7 +363,7 @@ const CARD_DEFINITIONS = {
     targeting: 'single',
     cast: 'brickwall',
     effect: { damageReduction: { percent: 40, duration: 6000 } },
-    desc: '내 타워 칸에 놓으면 타워를 둘러싼 벽돌 방어막이 6초 동안 받는 피해 40% 감소. 한 타워에 방어막은 하나 — 또 놓으면 6초 연장'
+    desc: '내 타워 칸에 놓으면 타워를 둘러싼 벽돌 방어막이 {sec(e.damageReduction.duration)}초 동안 받는 피해 {e.damageReduction.percent}% 감소. 한 타워에 방어막은 하나 — 또 놓으면 {sec(e.damageReduction.duration)}초 연장'
   },
   cherry_blossom: {
     cast: 'blossom',
@@ -361,7 +375,7 @@ const CARD_DEFINITIONS = {
     type: 'heal',
     targeting: 'single',
     effect: { hot: { healPerTick: 15, ticks: 5, tickInterval: 1000 } },
-    desc: '단일 5초간 매초 15 치유 (총 75)'
+    desc: '단일 {sec(dotMs(e.hot))}초간 {per(e.hot.tickInterval)} {e.hot.healPerTick} 치유 (총 {tot(e)})'
   },
 
   // ── 에픽 ───────────────────────────────────────────────
@@ -374,7 +388,7 @@ const CARD_DEFINITIONS = {
     type: 'attack',
     targeting: 'range3',
     effect: { dot: { dmgPerTick: 12, ticks: 4, tickInterval: 1000 } },
-    desc: '범위(3) 4초간 매초 12 피해 (총 48) · 감전: 물(침수·파도 · 폭염에 녹은 얼음물)에 젖은 타워는 50% 더'
+    desc: '범위(3) {sec(dotMs(e.dot))}초간 {per(e.dot.tickInterval)} {e.dot.dmgPerTick} 피해 (총 {tot(e)}) · 감전: 물(침수·파도 · 폭염에 녹은 얼음물)에 젖은 타워는 {S.zapPct}% 더'
   },
   forest_spirit: {
     cast: 'forest',
@@ -386,7 +400,7 @@ const CARD_DEFINITIONS = {
     type: 'heal',
     targeting: 'range3',
     effect: { hot: { healPerTick: 15, ticks: 5, tickInterval: 1000 } },
-    desc: '범위(3) 5초간 매초 15 치유 (총 75)'
+    desc: '범위(3) {sec(dotMs(e.hot))}초간 {per(e.hot.tickInterval)} {e.hot.healPerTick} 치유 (총 {tot(e)})'
   },
   starlight_burst: {
     id: 'starlight_burst',
@@ -397,7 +411,7 @@ const CARD_DEFINITIONS = {
     type: 'attack',
     targeting: 'range3',
     effect: { dot: { dmgPerTick: 12, ticks: 5, tickInterval: 1000 } },
-    desc: '범위(3) 5초간 매초 12 피해 (총 60)'
+    desc: '범위(3) {sec(dotMs(e.dot))}초간 {per(e.dot.tickInterval)} {e.dot.dmgPerTick} 피해 (총 {tot(e)})'
   },
   pumpkin_carriage: {
     id: 'pumpkin_carriage',
@@ -408,7 +422,7 @@ const CARD_DEFINITIONS = {
     type: 'defense',
     targeting: 'single',
     effect: { energyBurst: { perTick: 10, ticks: 5, interval: 1000 } },
-    desc: '5초간 매초 에너지 10 충전 (에너지 바 주황색)'
+    desc: '{sec(e.energyBurst.ticks * e.energyBurst.interval)}초간 {per(e.energyBurst.interval)} 에너지 {e.energyBurst.perTick} 충전 (에너지 바 주황색)'
   },
 
   // ── 에픽 진화 ─────────────────────────────────────────
@@ -426,7 +440,8 @@ const CARD_DEFINITIONS = {
         { dmgPerTick: 27, ticks: 1, tickInterval: 2000 }
       ]
     },
-    desc: '범위(3) 0.5초마다 12 피해(5회, 총 60) + 2초 후 즉발 27 피해 | 특성: 사용 중 모든 어택 카드 피해 +20%',
+    trait: { attackAmpPct: 20 },   // 특성: 사용 중 모든 어택 카드 피해 +20% (sync.js applyCardUse · effects.js)
+    desc: '범위(3) {sec(e.dot[0].tickInterval)}초마다 {e.dot[0].dmgPerTick} 피해({e.dot[0].ticks}회, 총 {e.dot[0].dmgPerTick * e.dot[0].ticks}) + {sec(e.dot[1].tickInterval)}초 후 즉발 {e.dot[1].dmgPerTick} 피해 | 특성: 사용 중 모든 어택 카드 피해 +{card.trait.attackAmpPct}%',
     isEvolution: true
   },
 
@@ -440,7 +455,7 @@ const CARD_DEFINITIONS = {
     type: 'attack',
     targeting: 'range3',
     effect: { dot: { dmgPerTick: 14, ticks: 5, tickInterval: 1000 } },
-    desc: '범위(3) 5초간 매초 14 피해 (총 70)'
+    desc: '범위(3) {sec(dotMs(e.dot))}초간 {per(e.dot.tickInterval)} {e.dot.dmgPerTick} 피해 (총 {tot(e)})'
   },
   nightmare: {
     id: 'nightmare',
@@ -451,7 +466,7 @@ const CARD_DEFINITIONS = {
     type: 'control',
     targeting: 'range3',
     effect: { damageAmp: { percent: 35, duration: 8000 } },
-    desc: '범위(3) 적 타워 받는 피해 35% 증가 (8초)'
+    desc: '범위(3) 적 타워 받는 피해 {e.damageAmp.percent}% 증가 ({sec(e.damageAmp.duration)}초)'
   },
   // 얼음전개 (2026-10-02 리워크) — 4×4칸을 얼린다 (board.js CAST_STYLES.icefield · castIcePlan).
   // 언 타워는 10초 동안 1초마다 12 (실효 2타워 240) + 상대 덱 10초 동결 + 유닛 기절이라 기력 30 → 40
@@ -465,7 +480,7 @@ const CARD_DEFINITIONS = {
     targeting: 'single',
     cast: 'icefield',
     effect: { freeze: { duration: 10000 }, dot: { dmgPerTick: 12, ticks: 10, tickInterval: 1000 }, deckFreeze: { duration: 10000 } },
-    desc: '4×4칸 범위의 모든 대상을 얼린다 — 타워는 밑동부터 꼭대기까지 얼음이 차올라 10초 동안 1초마다 12 피해, 언 타워가 있으면 상대 카드 덱 10초 동결 (어떤 카드도 못 쓴다). 바닥 얼음은 타워가 다 얼면 사라진다. 소환 유닛은 그동안 기절'
+    desc: '{st.cols}×{st.rows}칸 범위의 모든 대상을 얼린다 — 타워는 밑동부터 꼭대기까지 얼음이 차올라 {sec(e.freeze.duration)}초 동안 {sec(e.dot.tickInterval)}초마다 {e.dot.dmgPerTick} 피해, 언 타워가 있으면 상대 카드 덱 {sec(e.deckFreeze.duration)}초 동결 (어떤 카드도 못 쓴다). 바닥 얼음은 타워가 다 얼면 사라진다. 소환 유닛은 그동안 기절'
   },
   viper: {
     id: 'viper',
@@ -480,7 +495,7 @@ const CARD_DEFINITIONS = {
       dot: { dmgPerTick: 20, ticks: 5, tickInterval: 1000 },
       healReduction: { percent: 20, duration: 5000 }
     },
-    desc: '단일 즉시 120 피해 + 1초마다 20 피해(5회) + 대상 힐량 20% 감소(5초)'
+    desc: '단일 즉시 {e.damage} 피해 + {sec(e.dot.tickInterval)}초마다 {e.dot.dmgPerTick} 피해({e.dot.ticks}회) + 대상 힐량 {e.healReduction.percent}% 감소({sec(e.healReduction.duration)}초)'
   },
   mirror: {
     id: 'mirror',
@@ -491,7 +506,7 @@ const CARD_DEFINITIONS = {
     type: 'defense',
     targeting: 'single',
     effect: { reflect: { percent: 80, duration: 6000 } },
-    desc: '단일 6초간 받은 피해 최초 1회 80% 추가하여 적 킹에 반사'
+    desc: '단일 {sec(e.reflect.duration)}초간 받은 피해 최초 1회 {e.reflect.percent}% 추가하여 적 킹에 반사'
   },
 
   // ── 전설 ───────────────────────────────────────────────
@@ -504,7 +519,7 @@ const CARD_DEFINITIONS = {
     type: 'attack',
     targeting: 'single',
     effect: { dot: { dmgPerTick: 70, ticks: 5, tickInterval: 1000 } },
-    desc: '단일 5초간 매초 70 피해 (총 350)'
+    desc: '단일 {sec(dotMs(e.dot))}초간 {per(e.dot.tickInterval)} {e.dot.dmgPerTick} 피해 (총 {tot(e)})'
   },
   safe_zone: {
     id: 'safe_zone',
@@ -515,7 +530,7 @@ const CARD_DEFINITIONS = {
     type: 'defense',
     targeting: 'range3',
     effect: { immunity: { duration: 5000 } },
-    desc: '범위(3) 5초간 모든 피해 면역'
+    desc: '범위(3) {sec(e.immunity.duration)}초간 모든 피해 면역'
   },
   doom_seal: {
     id: 'doom_seal',
@@ -526,7 +541,7 @@ const CARD_DEFINITIONS = {
     type: 'control',
     targeting: 'single',
     effect: { damageAmp: { percent: 100, duration: 6000 } },
-    desc: '단일 6초간 적 타워 받는 피해 100% 증가'
+    desc: '단일 {sec(e.damageAmp.duration)}초간 적 타워 받는 피해 {e.damageAmp.percent}% 증가'
   },
 
   // ── 비밀 ───────────────────────────────────────────────
@@ -539,7 +554,7 @@ const CARD_DEFINITIONS = {
     type: 'attack',
     targeting: 'range3',
     effect: { damage: 220 },
-    desc: '상대 타워 3개 전부에 즉시 220 피해 (총 660)'
+    desc: '상대 타워 3개 전부에 즉시 {e.damage} 피해 (총 {e.damage * 3})'
   },
   grim_reaper: {
     id: 'grim_reaper',
@@ -554,9 +569,37 @@ const CARD_DEFINITIONS = {
     // 소환 유닛 — 카드를 쓰면 두 화면에 컷씬이 뜨고(게임 시간 정지), 필드에 리퍼가 선다 (js/units.js · js/reaper3d.js)
     cast: 'reaper',
     effect: { summon: { unit: 'reaper', hp: 200, damage: 67, interval: 4000, maxSouls: 10, ghostDamage: 10 } },
-    desc: '내 진영 칸에 그림리퍼(체력 200) 소환 — 같은 줄 상대 타워 앞까지 걸어가 4초마다 낫으로 67 피해, 벨 때마다 영혼 +1(최대 10). 상대 리퍼와 만나면 서로 싸운다. 쓰러지면 영혼 수만큼 유령이 상대 진영에 솟아 타워에 닿으면 10 피해'
+    desc: '내 진영 칸에 그림리퍼(체력 {e.summon.hp}) 소환 — 같은 줄 상대 타워 앞까지 걸어가 {sec(e.summon.interval)}초마다 낫으로 {e.summon.damage} 피해, 벨 때마다 영혼 +1(최대 {e.summon.maxSouls}). 상대 리퍼와 만나면 서로 싸운다. 쓰러지면 영혼 수만큼 유령이 상대 진영에 솟아 타워에 닿으면 {e.summon.ghostDamage} 피해'
   }
 };
+
+// ── 카드 설명 채우기 (2026-10-04) ──────────────────────────────
+// desc의 {식}은 카드 값으로 채운다 — 숫자를 설명에 따로 적지 않는다 (scripts/check.mjs가 다 채워지는지 본다).
+//   e = 카드 effect · st = 시전 연출 설정(CAST_STYLES — caststyles.js) · S = SYNERGY · card = 카드
+//   sec(ms) → 초 ('0.5' · '3') · per(ms) → '매초' | '0.5초마다' · dotMs(dot) → 전체 시간 · tot(e) → 피해(회복) 합
+const _descFns = {};
+const _descHelpers = {
+  sec:   ms => String(Math.round(ms / 100) / 10),
+  per:   ms => ms === 1000 ? '매초' : String(Math.round(ms / 100) / 10) + '초마다',
+  dotMs: d => d.ticks * d.tickInterval,
+  tot:   e => {
+    const sum = (x, k) => (Array.isArray(x) ? x : x ? [x] : []).reduce((a, d) => a + d[k] * d.ticks, 0);
+    return (e.damage || 0) + (e.heal || 0) + sum(e.dot, 'dmgPerTick') + sum(e.hot, 'healPerTick');
+  },
+};
+
+/** 설명 템플릿을 채운다. 못 채운 자리는 그대로 둔다 (검사가 잡는다) */
+function cardFillDesc(text, card) {
+  if (!text || !card || !String(text).includes('{')) return text;
+  const st = typeof CAST_STYLES !== 'undefined' && card.cast ? CAST_STYLES[card.cast] : undefined;
+  return String(text).replace(/\{([^{}]+)\}/g, (m, expr) => {
+    try {
+      const fn = _descFns[expr] || (_descFns[expr] = new Function('e', 'st', 'S', 'card', 'sec', 'per', 'dotMs', 'tot', `return (${expr});`));
+      const v = fn(card.effect || {}, st, SYNERGY, card, _descHelpers.sec, _descHelpers.per, _descHelpers.dotMs, _descHelpers.tot);
+      return v == null || Number.isNaN(v) ? m : String(v);
+    } catch { return m; }
+  });
+}
 
 /**
  * 카드 면 그림이 있는 카드 — 그림이 이름·에너지·등급 표시까지 담고 있어서 기본 아이콘·글자를 가린다.

@@ -26,6 +26,8 @@ function showCenterNotice(){}
   });
   await load('js/vendor/three.min.js');
   await load('js/towers3d.js');
+  await load('js/cards.js');        // 카드 수치 원본 (SYNERGY) — board.js가 읽는다
+  await load('js/caststyles.js');
   await load('js/board.js');
   initMapPan();
   window.__ready = 1;
