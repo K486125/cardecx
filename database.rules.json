@@ -440,6 +440,34 @@
               "$other": { ".validate": false }
             }
           },
+          "fields": {
+            ".write": "auth != null && (root.child('rooms/' + $code).child('players/p1/uid').val() === auth.uid || root.child('rooms/' + $code).child('players/p2/uid').val() === auth.uid)",
+            "$fieldId": {
+              ".validate": "$fieldId.length <= 40 && newData.hasChildren(['k', 'v', 'at', 'from', 'until'])",
+              "k": { ".validate": "newData.val() === 'totem' || newData.val() === 'flood' || newData.val() === 'wave' || newData.val() === 'fire' || newData.val() === 'lock'" },
+              "v": { ".validate": "newData.val() === 'p1' || newData.val() === 'p2'" },
+              "at": { ".validate": "newData.isNumber()" },
+              "from": { ".validate": "newData.isNumber()" },
+              "until": { ".validate": "newData.isNumber() && newData.val() >= newData.parent().child('from').val() && newData.val() - newData.parent().child('from').val() <= 60000" },
+              "card": { ".validate": "newData.isString() && newData.val().length <= 20" },
+              "how": { ".validate": "newData.isString() && newData.val().length <= 10" },
+              "c0": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15" },
+              "c1": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 15" },
+              "r0": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 8" },
+              "r1": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 8" },
+              "dir": { ".validate": "newData.val() === 1 || newData.val() === -1" },
+              "x": { ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000" },
+              "life": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 60000" },
+              "burn": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 60000" },
+              "travel": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 60000" },
+              "cut": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 60000" },
+              "cutAt": { ".validate": "newData.isNumber()" },
+              "gone": { ".validate": "newData.isNumber()" },
+              "doused": { ".validate": "newData.isNumber()" },
+              "hit": { ".validate": "newData.isNumber()" },
+              "$other": { ".validate": false }
+            }
+          },
           "emoji": {
             "$role": {
               ".write": "auth != null && root.child('rooms/' + $code).child('players/' + $role + '/uid').val() === auth.uid",

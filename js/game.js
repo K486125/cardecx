@@ -888,7 +888,7 @@ function _attachListeners() {
     }
     if (hit.type?.startsWith('cast_')) {
       // 상대가 쓴 카드의 시전 연출 (내 것은 클릭하는 순간 이미 재생했다)
-      if (hit.sourcePlayer !== _localKey) playCastFx(hit.type.slice(5), owner, hit.targetTower, _castFxPoint(owner, hit));
+      if (hit.sourcePlayer !== _localKey) playCastFx(hit.type.slice(5), owner, hit.targetTower, _castFxPoint(owner, hit), snap.key);
       else setTimeout(() => snap.ref.remove(), 1200);
       return;
     }
@@ -1423,7 +1423,7 @@ function _attachSpectatorListeners() {
       return;
     }
     if (hit.type === 'energyDrain') return;   // 에너지는 각 플레이어 것 — 관전 화면에서는 할 일이 없다
-    if (hit.type?.startsWith('cast_')) { playCastFx(hit.type.slice(5), owner, hit.targetTower, _castFxPoint(owner, hit)); return; }
+    if (hit.type?.startsWith('cast_')) { playCastFx(hit.type.slice(5), owner, hit.targetTower, _castFxPoint(owner, hit), snap.key); return; }
     showTowerHit(owner, hit.targetTower, hit.amount, hit.type);
   });
 

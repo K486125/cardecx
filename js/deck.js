@@ -500,7 +500,7 @@ window.onCardUsed = function(card, slotIndex, targetOwner, targetPos, applyDelay
   // 연출 id에 차징 단계가 붙어 있을 수 있다 ('stone@3') — 상대도 같은 속도로 봐야 한다
   // 연출은 '놓은 진영' 기준이다 — 내 진영에 쏜 화살처럼 피해 대상(상대)과 연출 자리(내 진영)가 다를 수 있다
   const fxTargetKey = targetOwner === 'my' ? _deckPlayerKey : _deckEnemyKey;
-  if (card.cast) writeCastFx(_deckPlayerKey, fxTargetKey, targetPos, opts?.castId || card.cast, opts?.dx, opts?.dy);
+  if (card.cast) writeCastFx(_deckPlayerKey, fxTargetKey, targetPos, opts?.castId || card.cast, opts?.dx, opts?.dy, opts?.castKey);
 
   // ── 대상마다 따로 들어가는 카드 (바위 지옥) ──────────────
   // 덩이마다 도착 시각·피해·돌가루가 다르다. 에너지와 덱 칸은 지금 한 번만 기록하고,

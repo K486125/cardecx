@@ -981,8 +981,11 @@ function listenEmoji(playerKey, callback) {
   return _track(ref, 'value', snap => callback(snap.val()));
 }
 
-/** 시전 연출 신호 — 피해보다 먼저 보내 상대·관전자도 같은 연출을 본다 */
-function writeCastFx(sourcePlayer, targetPlayer, targetTower, castId, fxDX, fxDY) {
+/**
+ * 시전 연출 신호 — 피해보다 먼저 보내 상대·관전자도 같은 연출을 본다.
+ * @param {string} [key] 시전 키 — 상성 기록(gameState/fields)과 같은 키를 쓴다 (board.js playCastFx)
+ */
+function writeCastFx(sourcePlayer, targetPlayer, targetTower, castId, fxDX, fxDY, key = uniqueId()) {
   const row = {
     targetPlayer, targetTower, amount: 0, type: 'cast_' + castId,
     sourcePlayer, ts: serverNow(),
@@ -993,8 +996,22 @@ function writeCastFx(sourcePlayer, targetPlayer, targetTower, castId, fxDX, fxDY
     row.fxDX = fxDX;
     row.fxDY = fxDY;
   }
-  return db.ref(`rooms/${_syncRoomCode}/gameState/instantHits/${uniqueId()}`).set(row)
+  return db.ref(`rooms/${_syncRoomCode}/gameState/instantHits/${key}`).set(row)
     .catch(err => console.error('시전 신호 실패:', err));
+}
+
+// ── 상성 상태 (2026-10-04) ─────────────────────────────────
+// gameState/fields/{시전 키} — 토템 · 물 · 불 · 토템 못 세우는 자리. 그 진영 주인 화면이 적는다 (board.js _fieldWrite).
+// 중간에 들어온 화면(새로고침 · 관전)이 읽어 되살린다. 끝나고 keepMs 뒤 지운다.
+function writeField(key, row, keepMs) {
+  const ref = db.ref(`rooms/${_syncRoomCode}/gameState/fields/${key}`);
+  ref.set(row).catch(err => console.warn('상성 기록 실패:', err));
+  setTimeout(() => ref.remove().catch(() => {}), Math.max(1000, keepMs));
+}
+
+/** 바뀐 것 — 토템이 없어짐 · 줄어듦, 불이 꺼짐. 이미 지운 기록이면 규칙이 막는다 (그냥 둔다) */
+function updateField(key, patch) {
+  db.ref(`rooms/${_syncRoomCode}/gameState/fields/${key}`).update(patch).catch(() => {});
 }
 
 /** 즉시 피해 숫자 표시용 child_added 리스너 */

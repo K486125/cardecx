@@ -23,6 +23,8 @@ function boardUpdateState(gameState) {
   _boardGameState = gameState;
   // 소환 유닛·컷씬 멈춤 (js/units.js) — 플레이어·관전자 화면 모두 여기를 지난다
   if (typeof unitsOnState === 'function') unitsOnState(gameState);
+  // 상성 상태 (토템 · 물 · 불) — 중간에 들어온 화면은 여기서 되살린다
+  boardFieldsOnState(gameState);
 }
 
 // ── 타워 HP 업데이트 ────────────────────────────────────────
@@ -1151,9 +1153,21 @@ function castResetCooldown() {
 
 /**
  * 시전 연출 재생 — 상대·AI가 쓴 카드도 같은 연출로 보여 준다.
+ * @param {string} [castKey] 시전 키 (시전 신호 instantHits의 키) — 상성 기록(fields)과 같다.
+ *   이미 되살린 시전이면 다시 재생하지 않는다. 없으면(AI) 새로 만든다
  * @returns {number} 피해가 들어가야 하는 지연(ms), 연출이 없으면 0
  */
-function playCastFx(castId, owner, pos, stagePoint = null) {
+function playCastFx(castId, owner, pos, stagePoint = null, castKey = null) {
+  const key = castKey || uniqueId();
+  if (_castSeen.has(key)) return 0;
+  _castSeen.add(key);
+  const prev = _fxCastKey;
+  _fxCastKey = key;
+  try { return _playCastFx(castId, owner, pos, stagePoint); }
+  finally { _fxCastKey = prev; }
+}
+
+function _playCastFx(castId, owner, pos, stagePoint) {
   // 'stone@3'처럼 차징 단계가 붙어 올 수 있다
   const at    = String(castId == null ? '' : castId).split('@');
   const baseId = at[0];
@@ -1193,6 +1207,10 @@ function playCastFx(castId, owner, pos, stagePoint = null) {
     if (totemCell) {
       c = _tileCenter(totemCell.col, totemCell.row);
       _markTotemTile(totemCell.col, totemCell.row, style.endMs);   // 서 있는 동안 이 칸에는 더 못 세운다
+      const now = gameNow();
+      _totemFieldKey[totemCell.col + ',' + totemCell.row] = _fxCastKey;
+      _fieldWrite(owner, _fxCastKey, { k: 'totem', card: baseId, ..._flipRectP1({ c0: totemCell.col, c1: totemCell.col, r0: totemCell.row, r1: totemCell.row }),
+                                       from: now, until: now + style.endMs, life: style.lifeMs || style.endMs });
     }
   }
   // 벽돌 · 철벽 — 그 타워를 얇은 벽이 둘러싼다 (서 있는 동안이 곧 막는 시간).
@@ -1243,21 +1261,7 @@ function playCastFx(castId, owner, pos, stagePoint = null) {
   // 설치형(토템)은 한가운데에 서는 물건을 3D로 세운다 — 바닥 장식(원·풀·꿃잎)은 SVG 그대로.
   // WebGL이 없으면 false가 오므로 평면 이모지로 대신한다.
   if (style.shape === 'circle') {
-    const spawned = typeof towers3dSpawnTotem === 'function' &&
-                    towers3dSpawnTotem(c.x, c.y, baseId, style.endMs);
-    if (!spawned) {
-      const flat = document.createElement('div');
-      flat.className = 'cast-fx cast-totem-flat';
-      flat.textContent = baseId === 'whiteblossom' ? '\u{1F4AE}' : '\u{1F333}';
-      const sp = _groundToStage(c.x, c.y);   // 이모지는 서 있는 물건 — 화면 좌표로
-      flat.style.left = sp.x + 'px';
-      flat.style.top  = sp.y + 'px';
-      if (totemCell) flat.dataset.tile = el.dataset.tile;
-      _fxLayer().appendChild(flat);
-      setTimeout(() => flat.remove(), style.endMs);
-    }
-    _totemGauge(c, style, totemCell, spawned);
-    _totemWitherWatch();                 // 더위(폭염의 열기) 속에 세운 토템은 말라 비틀어진다
+    _totemStand(baseId, style, c, totemCell, style.endMs);
     // 붕괴가 일어나는 중인 자리 — 막 세웠어도 곧바로 무너진다 (회복도 들어가지 않는다: 보낸 쪽이 대상을 비운다).
     // 세워지는 모습이 잠깐 보여야 '세웠는데 무너졌다'로 읽힌다
     const doom = totemCell && totemBreakZoneAt(totemCell.col, totemCell.row);
@@ -1266,6 +1270,28 @@ function playCastFx(castId, owner, pos, stagePoint = null) {
 
   setTimeout(() => el.remove(), style.endMs);
   return style.hitMs;
+}
+
+/**
+ * 토템이 선다 — 3D 토템(WebGL이 없으면 평면 이모지) · 남은 시간 게이지 · 더위에 시드는지 살피기.
+ * 중간에 들어온 화면이 되살릴 때도 쓴다 (ms = 남은 시간, ago = 세운 지 지난 시간, cut = 줄어든 시간)
+ */
+function _totemStand(baseId, style, c, cell, ms, ago = 0, cut = 0) {
+  const spawned = typeof towers3dSpawnTotem === 'function' && towers3dSpawnTotem(c.x, c.y, baseId, ms);
+  if (!spawned) {
+    const flat = document.createElement('div');
+    flat.className = 'cast-fx cast-totem-flat';
+    flat.textContent = baseId === 'whiteblossom' ? '\u{1F4AE}' : '\u{1F333}';
+    const sp = _groundToStage(c.x, c.y);   // 이모지는 서 있는 물건 — 화면 좌표로
+    flat.style.left = sp.x + 'px';
+    flat.style.top  = sp.y + 'px';
+    if (cell) flat.dataset.tile = cell.col + ',' + cell.row;
+    _fxLayer().appendChild(flat);
+    setTimeout(() => flat.remove(), ms);
+  }
+  _totemGauge(c, style, cell, spawned, ago, cut);
+  _totemWitherWatch();                 // 더위(폭염의 열기) 속에 세운 토템은 말라 비틀어진다
+  return spawned;
 }
 
 /**
@@ -1501,6 +1527,7 @@ function _spawnDust(x, y, size, delay, ms, tint = null) {
  */
 function _playTornadoFx(style, owner, stagePoint) {
   if (!stagePoint) return style.hitMs;
+  const fk = _fxCastKey;
   const layer = _fxLayer();
   const fx = style.fx;
   // 쓰는 사람 시점의 열 — 맞는 쪽이 이 화면 왼쪽이면(상대·AI가 쓴 것) 좌우를 뒤집어 잰다
@@ -1540,8 +1567,9 @@ function _playTornadoFx(style, owner, stagePoint) {
   // 토네이도를 맞은 쪽 토템은 바람에 날아간다 (2026-10-02 상성 — 붕괴와 같은 디버프).
   // 소용돌이가 닿는 줄(다 자란 폭)의 맞는 쪽 진영 토템 전부
   const row = Math.floor(stagePoint.y / TILE), reach = Math.floor(r / TILE);
-  setTimeout(() => _totemDebuff({ c0: 0, c1: MAP_COLS - 1, r0: row - reach, r1: row + reach }, 'blow', owner, owner === 'enemy' ? 1 : -1),
-             style.travelMs * 0.85);
+  setTimeout(() => _fieldLock(owner, fk,
+    _totemDebuff({ c0: 0, c1: MAP_COLS - 1, r0: row - reach, r1: row + reach }, 'blow', owner, owner === 'enemy' ? 1 : -1), TOTEM_LOCK_MS),
+    style.travelMs * 0.85);
   setTimeout(() => el.remove(), style.endMs);
   return style.travelMs;
 }
@@ -2814,7 +2842,11 @@ function _playWaveFx(style, owner, stagePoint) {
   const opts = { backX, dir, width: style.cols * TILE, riseMs: style.riseMs, travelMs,
                  speedPx: style.speed * TILE, calmMs: style.calmMs };
   const in3d = typeof towers3dWave === 'function' && towers3dWave(opts);
-  _waterZoneAdd({ victim: owner, kind: 'wave', start: gameNow(), ...opts });
+  const start = gameNow();
+  _waterZoneAdd({ victim: owner, kind: 'wave', start, ...opts });
+  const flip = _boardPlayerKey === 'p2';   // 기록은 p1 기준 — 뒤끝 x와 방향을 뒤집는다
+  _fieldWrite(owner, _fxCastKey, { k: 'wave', card: _styleKey(style), x: flip ? MAP_COLS * TILE - backX : backX, dir: flip ? -dir : dir,
+                                   travel: travelMs, from: start, until: start + style.riseMs + travelMs + style.calmMs });
   _waveGround(opts, !in3d);
   // 솟구치는 순간 필드가 울린다
   const map = document.querySelector('.game-map');
@@ -2906,7 +2938,7 @@ function _waterZoneAdd(z) {
   const victimKey = z.victim === 'my' ? _boardPlayerKey : _boardEnemyKey;
   if (z.kind === 'flood') {
     const { R, style } = z;
-    const until = z.start + style.flowMs + style.sinkMs;
+    const until = z.until ?? z.start + style.flowMs + style.sinkMs;
     _waterZones.push({ victimKey, to: until,
       test: (c, r, t) => _inRect(R, c, r) && t >= z.start + floodRowMs(style, R, r) && t < until });
     return;
@@ -3085,6 +3117,7 @@ function _floodDraw(ctx, sim, t, flow, sink, drain) {
 }
 
 function _floodFx(style, R, owner) {
+  const fk = _fxCastKey;
   const ground = _castGround();
   const layer = _fxLayer();
   if (!ground) return;
@@ -3132,7 +3165,9 @@ function _floodFx(style, R, owner) {
 
   // 잠긴 타워 — 다 흐른 뒤 반쯤 가라앉고, 발밑에 물결이 퍼진다
   const towers = _towersInRect(R, false).filter(el => el.dataset.owner === owner);
-  _waterZoneAdd({ victim: owner, kind: 'flood', start: gameNow(), R, style });
+  const start = gameNow();
+  _waterZoneAdd({ victim: owner, kind: 'flood', start, R, style });
+  _fieldWrite(owner, fk, { k: 'flood', card: _styleKey(style), ..._flipRectP1(R), from: start, until: start + style.flowMs + style.sinkMs });
   setTimeout(() => {
     towers.forEach(el => {
       if (el.classList.contains('destroyed')) return;
@@ -3155,6 +3190,7 @@ function _floodFx(style, R, owner) {
 //    박힌 채 (2초)      0.5초마다 7 × 4 — 그동안 가시는 그대로 서 있다가 땅속으로 꺼진다
 // ════════════════════════════════════════════════════════════
 function _thornFx(style, R, owner) {
+  const fk = _fxCastKey;
   const ground = _castGround();
   const x0 = R.c0 * TILE, y0 = R.r0 * TILE;
   const W = (R.c1 - R.c0 + 1) * TILE, H = (R.r1 - R.r0 + 1) * TILE;
@@ -3177,7 +3213,7 @@ function _thornFx(style, R, owner) {
   const towers = inRect.map(el => _towerFootprint(el));
   // 상성 (2026-10-03) — 가시가 솟는 순간 맞는 쪽 토템(숲의정령 · 흰꽃)은 산산조각 나고,
   // 가시가 박혀 있는 동안 그 자리에 세운 토템도 곧바로 부서진다
-  setTimeout(() => _totemDebuff(R, 'shatter', owner, 1, holdMs), style.hitMs);
+  setTimeout(() => _fieldLock(owner, fk, _totemDebuff(R, 'shatter', owner, 1, holdMs), holdMs), style.hitMs);
   const in3d = typeof towers3dSpikes === 'function' &&
     towers3dSpikes({ tiles, towers, riseMs: style.hitMs - 30, holdMs, seed: (R.c0 * 31 + R.r0 * 17 + 7) >>> 0 });
   // 솟는 순간 — 필드가 울리고 흙먼지가 오르며, 꿰뚫린 타워가 휘청인다
@@ -3237,8 +3273,10 @@ function _playAreaFx(style, owner, pos, stagePoint) {
   if (style.totemBreak) {
     const Z = _totemVictimRect(R, owner);
     if (Z) {
-      _totemBreakZones.push({ ...Z, until: Date.now() + style.hitMs + style.lockMs });
+      const zone = { ...Z, until: Date.now() + style.hitMs + style.lockMs, how: 'crumble', dir: 1 };
+      _totemBreakZones.push(zone);
       setTimeout(() => _breakTotemsIn(Z), style.hitMs);
+      _fieldLock(owner, _fxCastKey, zone, style.hitMs + style.lockMs, style.hitMs);
     }
   }
   // 지진 — 땅이 울리는 순간 범위 안 상대 토템의 남은 시간이 준다
@@ -3502,6 +3540,9 @@ function _totemShorten(col, row, ms) {
   const L = _totemLife[key];
   if (L) L.cut += ms;
   _totemTiles[key] -= ms;
+  if (L && _totemFieldKey[key] && _boardOwnsKey(col < MAP_COLS / 2 ? _boardPlayerKey : _boardEnemyKey)) {
+    _fieldPatch(_totemFieldKey[key], { cut: L.cut, cutAt: Math.round(gameNow()) });
+  }
   if (typeof towers3dTotemShorten === 'function') towers3dTotemShorten(p.x, p.y, ms);
   if (typeof effectsShortenTotemHeals === 'function') {
     effectsShortenTotemHeals(tag => { const l = _totemTagLocal(tag); return !!l && l.col === col && l.row === row; }, ms);
@@ -3532,7 +3573,7 @@ function _totemShorten(col, row, ms) {
  * 그림리퍼 낫 대기 게이지와 같은 모양, 색은 초록 (숲의정령·흰꽃 둘 다). 남은 만큼 링이 줄어든다.
  * 토템이 무너지면(붕괴) 같이 사라진다.
  */
-function _totemGauge(c, style, cell, in3d) {
+function _totemGauge(c, style, cell, in3d, ago = 0, cut = 0) {
   const life = style.lifeMs || style.endMs;
   const el = document.createElement('div');
   el.className = 'totem-cd';
@@ -3540,9 +3581,9 @@ function _totemGauge(c, style, cell, in3d) {
   if (cell) el.dataset.tile = cell.col + ',' + cell.row;
   _fxLayer().appendChild(el);
   const text = el.querySelector('em');
-  const t0 = performance.now();
+  const t0 = performance.now() - ago;
   // 남은 시간은 줄어들 수 있다 (지진 · 바람 — _totemShorten)
-  const L = { t0, life, cut: 0 };
+  const L = { t0, life, cut };
   if (cell) _totemLife[cell.col + ',' + cell.row] = L;
   let shown = '';
   const step = now => {
@@ -3624,6 +3665,11 @@ function _wallGaugeStep() {
 function _destroyTotem(col, row, how = 'crumble', dir = 1, o = {}) {
   delete _totemTiles[col + ',' + row];
   const key = col + ',' + row;
+  // 토템 주인 화면이 '없어졌다'를 적는다 — 중간에 들어온 화면은 되살리지 않고, 놓친 화면은 맞춘다
+  if (_totemFieldKey[key] && _boardOwnsKey(col < MAP_COLS / 2 ? _boardPlayerKey : _boardEnemyKey)) {
+    _fieldPatch(_totemFieldKey[key], { gone: Math.round(gameNow()), how: String(how || 'crumble').slice(0, 10) });
+  }
+  delete _totemFieldKey[key];
   const cls = { blow: 'totem-blown', burn: 'totem-burnt', saw: 'totem-sawn', slash: 'totem-sawn', shatter: 'totem-shattered' }[how] || 'totem-broken';
   const life = { blow: 1600, burn: 1400, saw: 1500, slash: 1500, shatter: 1100 }[how] || 520;
   document.querySelectorAll(`.cast-fx-ground[data-tile="${key}"], .cast-totem-flat[data-tile="${key}"]`).forEach(el => {
@@ -4474,8 +4520,11 @@ function onCardDropped(card, slotIndex, targetOwner, targetPos, opts = null) {
   // 투척은 차징 단계에 따라 연출 길이가 달라져서 opts가 실제 길이를 들고 온다
   const st = cardCastStyle(card);
   if (st && st.hitMs > 0) _castBusyUntil[card.id] = Date.now() + (opts?.endMs || st.endMs);
-  // 시전 연출이 있는 카드는 연출이 마무리되는 순간에 피해가 들어간다
-  const hitMs = playCastFx(opts?.castId || card?.cast, targetOwner, targetPos, opts?.point || null);
+  // 시전 연출이 있는 카드는 연출이 마무리되는 순간에 피해가 들어간다.
+  // 시전 키는 시전 신호와 상성 기록이 같이 쓴다 — 늦게 들어온 화면이 둘을 짝지어 한 번만 보여 준다
+  const castKey = uniqueId();
+  const hitMs = playCastFx(opts?.castId || card?.cast, targetOwner, targetPos, opts?.point || null, castKey);
+  opts = { ...(opts || {}), castKey };
 
   // 공격 범위에 든 소환 유닛 (피해가 들어가는 순간의 자리로 판정한다 — js/units.js)
   if (opts?.unitTiles?.length) {
@@ -4895,7 +4944,8 @@ function _playFireballFx(style, owner, pos, point) {
   _fireballFly(from, land, style.flyMs);
   // 불이 붙어 있는 동안 물이 닿으면 꺼진다 (상성)
   const b = style.burn, t0 = gameNow() + style.flyMs;
-  const patch = _fireAdd({ victim: owner, R, card: 'flame', from: t0, until: t0 + b.dot.ticks * b.dot.tickInterval + 300 });
+  const patch = _fireAdd({ victim: owner, R, card: 'flame', from: t0, until: t0 + b.dot.ticks * b.dot.tickInterval + 300, fieldKey: _fxCastKey });
+  _fieldWrite(owner, _fxCastKey, { k: 'fire', card: 'flame', ..._flipRectP1(R), from: t0, until: patch.until, burn: patch.until - t0 });
   setTimeout(() => _fireLand(style, R, owner, land, patch), style.flyMs);
   return style.flyMs;
 }
@@ -5040,7 +5090,8 @@ function _heatwaveFx(style, R, owner) {
   const total = style.hitMs + style.burnMs + style.heatMs;
   // 폭발부터 열기가 식을 때까지 — 그 사이 물이 닿으면 불도 열기도 꺼진다 (상성)
   const t0 = gameNow() + style.hitMs;
-  const patch = _fireAdd({ victim: owner, R, card: 'fire_evo', from: t0, until: t0 + style.burnMs + style.heatMs });
+  const patch = _fireAdd({ victim: owner, R, card: 'fire_evo', from: t0, until: t0 + style.burnMs + style.heatMs, fieldKey: _fxCastKey });
+  _fieldWrite(owner, _fxCastKey, { k: 'fire', card: 'fire_evo', ..._flipRectP1(R), from: t0, until: patch.until, burn: style.burnMs });
   patch.els = [_fireGroundPatch(R, 'heat-ground', total + 400, {
     '--charge': style.hitMs + 'ms', '--burn': style.burnMs + 'ms', '--heat': style.heatMs + 'ms'
   })].filter(Boolean);
@@ -5170,6 +5221,7 @@ function _fireDouse(p, now) {
   if (p.lock) p.lock.until = 0;   // 불이 꺼졌다 — 그 자리에 다시 토템을 세울 수 있다
   const victimKey = p.victim === 'my' ? _boardPlayerKey : _boardEnemyKey;
   _fireDoused.push({ victimKey, R: p.R, card: p.card, until: p.until + 1500 });
+  if (_boardOwnsKey(victimKey)) _fieldPatch(p.fieldKey, { doused: Math.round(now) });
   _fireDouseFx(p);
   // 열기도 식는다 — 더위 표를 떼고, 그 진영 주인 화면이 더위 구역을 지운다
   if (p.card === 'fire_evo') {
@@ -5341,4 +5393,208 @@ function _totemWitherStep() {
     document.querySelectorAll(`.cast-fx-ground[data-tile="${k}"], .cast-totem-flat[data-tile="${k}"]`)
       .forEach(el => el.classList.toggle('totem-withered', on));
   });
+}
+
+// ════════════════════════════════════════════════════════════
+//  상성 상태 기록 (2026-10-04) — gameState/fields/{시전 키}
+//  토템 · 물(침수 · 파도) · 불(불덩이 · 폭염) · 토템을 못 세우는 자리(토네이도 · 붕괴 · 가시)는
+//  각 화면이 연출을 받으며 기억한다. 중간에 들어온 화면(새로고침 · 관전 입장)은 그 연출을 못 봤다 —
+//  그 진영 주인 화면(맞는 쪽 · AI 대전이면 방장)이 같은 내용을 DB에 적어 두고, 들어온 화면이 읽어 되살린다.
+//  · 키는 시전 신호(instantHits)의 키와 같다 — 연출을 봤으면 되살리지 않고, 되살렸으면 연출을 건너뛴다
+//  · 칸 · 방향은 p1 기준, 시각은 게임 시간(gameNow)
+//  · 그 뒤에 바뀐 것(토템이 없어짐 · 줄어듦, 불이 꺼짐)도 주인 화면이 적고, 놓친 화면은 그 기록에 맞춘다
+// ════════════════════════════════════════════════════════════
+const _castSeen = new Set();   // 연출을 봤거나 되살린 시전 키
+let _fxCastKey = null;         // 지금 재생 중인 시전의 키 (playCastFx 안에서만 — 연출 함수는 시작할 때 잡아 둔다)
+let _fieldsSince = 0;          // 이 화면이 상태를 받기 시작한 시각 (serverNow)
+const _fieldWait = {};         // 키 → 타이머 — 막 생긴 기록은 연출 신호가 곧 올 수 있어 잠깐 기다린다
+const _fieldRecheck = {};      // 키 → 타이머 — 막 바뀐 기록은 이 화면도 곧 같은 일을 겪으므로 잠깐 기다린다
+const _totemFieldKey = {};     // '열,행'(이 화면) → 그 토템을 세운 시전 키
+const FIELD_GRACE_MS = 1500;   // 연출 신호를 기다리는 시간 (AI가 쓴 카드는 신호가 없다 — 관전 화면이 이만큼 늦게 되살린다)
+const FIELD_LAG_MS   = 800;    // 바뀐 기록을 따르기 전에 기다리는 시간
+const FIELD_KEEP_MS  = 3000;   // 끝난 뒤 기록을 지우기까지
+
+/** 칸 범위 p1 기준 ↔ 이 화면 (p2 화면은 좌우가 거울 — 같은 식으로 오간다) */
+function _flipRectP1(R) {
+  return _boardPlayerKey === 'p2'
+    ? { c0: MAP_COLS - 1 - R.c1, c1: MAP_COLS - 1 - R.c0, r0: R.r0, r1: R.r1 }
+    : { c0: R.c0, c1: R.c1, r0: R.r0, r1: R.r1 };
+}
+
+/** CAST_STYLES에서 그 연출의 이름 */
+function _styleKey(style) {
+  return Object.keys(CAST_STYLES).find(k => CAST_STYLES[k] === style) || '';
+}
+
+/** 그 진영 주인 화면이면 기록한다. side = 그 진영 (이 화면 기준 'my' | 'enemy') */
+function _fieldWrite(side, key, data) {
+  const victim = side === 'my' ? _boardPlayerKey : _boardEnemyKey;
+  if (!key || !_boardOwnsKey(victim) || typeof writeField !== 'function') return;
+  const row = { v: victim, at: Math.round(serverNow()) };
+  Object.entries(data).forEach(([k, v]) => { row[k] = typeof v === 'number' ? Math.round(v) : v; });
+  ['c0', 'c1'].forEach(k => { if (k in row) row[k] = Math.max(0, Math.min(MAP_COLS - 1, row[k])); });
+  ['r0', 'r1'].forEach(k => { if (k in row) row[k] = Math.max(0, Math.min(MAP_ROWS - 1, row[k])); });
+  writeField(key, row, data.until - gameNow() + FIELD_KEEP_MS);
+}
+
+function _fieldPatch(key, patch) {
+  if (key && typeof updateField === 'function') updateField(key, patch);
+}
+
+/** 토템을 못 세우는 자리 — hitMs 뒤에 그 안의 토템이 없어진다(붕괴) */
+function _fieldLock(side, key, zone, ms, hitMs = 0) {
+  if (!zone) return;
+  const now = gameNow();
+  const dir = (zone.dir || 1) * (_boardPlayerKey === 'p2' ? -1 : 1);
+  _fieldWrite(side, key, { k: 'lock', how: zone.how || 'crumble', dir, ..._flipRectP1(zone),
+                           from: now, until: now + ms, ...(hitMs ? { hit: now + hitMs } : {}) });
+}
+
+/** 게임 상태가 올 때마다 (boardUpdateState) — 못 본 기록은 되살리고, 본 기록은 바뀐 것에 맞춘다 */
+function boardFieldsOnState(gs) {
+  if (!_fieldsSince) _fieldsSince = serverNow();
+  const fields = gs?.fields;
+  if (!fields) return;
+  Object.entries(fields).forEach(([key, f]) => {
+    if (!f || typeof f !== 'object') return;
+    if (_castSeen.has(key)) { _fieldReconcile(key, f); return; }
+    if (_fieldWait[key]) return;
+    if (f.at < _fieldsSince) { _fieldRestore(key, f); return; }
+    _fieldWait[key] = setTimeout(() => {
+      delete _fieldWait[key];
+      const g = _boardGameState?.fields?.[key];
+      if (g && !_castSeen.has(key)) _fieldRestore(key, g);
+    }, FIELD_GRACE_MS);
+  });
+}
+
+/** 연출 없이 상태를 되살린다 — 이미 지나간 만큼은 빼고 */
+function _fieldRestore(key, f) {
+  _castSeen.add(key);
+  const now = gameNow();
+  if (!(f.until > now)) return;
+  const side = f.v === _boardPlayerKey ? 'my' : 'enemy';
+  const R = f.c0 != null ? _flipRectP1(f) : null;
+  const dir = (f.dir || 1) * (_boardPlayerKey === 'p2' ? -1 : 1);
+
+  if (f.k === 'totem') {
+    const style = CAST_STYLES[f.card];
+    const left = f.until - (f.cut || 0) - now;
+    if (!style || !R || f.gone || left <= 0 || totemOnTile(R.c0, R.r0)) return;
+    const cell = { col: R.c0, row: R.r0 }, tk = cell.col + ',' + cell.row;
+    const c = _tileCenter(cell.col, cell.row);
+    _totemTiles[tk] = Date.now() + left;
+    _totemFieldKey[tk] = key;
+    _fieldTotemGround(f.card, style, c, cell, left);
+    _totemStand(f.card, { ...style, lifeMs: f.life || style.lifeMs }, c, cell, left, now - f.from, f.cut || 0);
+    return;
+  }
+
+  if (f.k === 'flood') {
+    const style = CAST_STYLES[f.card];
+    if (!style || !R) return;
+    _waterZoneAdd({ victim: side, kind: 'flood', start: f.from, until: f.until, R, style });
+    _fireGroundPatch(R, 'ice-pool', f.until - now);   // 고인 물 — 물살 연출은 이미 지나갔다
+    return;
+  }
+
+  if (f.k === 'wave') {
+    const style = CAST_STYLES[f.card];
+    if (!style) return;
+    const backX = _boardPlayerKey === 'p2' ? MAP_COLS * TILE - f.x : f.x;
+    _waterZoneAdd({ victim: side, kind: 'wave', start: f.from, backX, dir, width: style.cols * TILE,
+                    riseMs: style.riseMs, travelMs: f.travel, speedPx: style.speed * TILE, calmMs: style.calmMs });
+    return;
+  }
+
+  if (f.k === 'fire' && R) {
+    if (f.doused) {
+      // 이미 꺼진 불 — 남은 불 피해가 들어가지 않게만 (effects.js boardFireDoused)
+      _fireDoused.push({ victimKey: f.v, R, card: f.card, until: f.until + 1500 });
+      return;
+    }
+    const p = _fireAdd({ victim: side, R, card: f.card, from: f.from, until: f.until, fieldKey: key });
+    const tiles = _rectTiles(R);
+    const seed = R.c0 * 29 + R.r0 * 13 + 3;
+    p.els = [_fireGroundPatch(R, 'fire-scorch', f.until - now + 400)].filter(Boolean);
+    // 아직 타는 중이면 남은 만큼 — 그 자리의 토템은 타 버리고 새로 세운 것도 재가 된다
+    const ignite = () => {
+      if (p.doused) return;
+      const left = f.from + f.burn - gameNow();
+      if (left <= 0) return;
+      p.lock = _totemDebuff(R, 'burn', side, 1, left);
+      if (typeof towers3dFireField === 'function') towers3dFireField({ tiles, ms: left, burst: 1, seed, tag: p.tag });
+    };
+    p.timers.push(setTimeout(ignite, Math.max(0, f.from - now)));
+    if (f.card === 'fire_evo') {
+      p.timers.push(setTimeout(() => {
+        const ms = f.until - gameNow();
+        if (p.doused || ms <= 0) return;
+        if (typeof towers3dHeatHaze === 'function') towers3dHeatHaze({ tiles, ms, seed, tag: p.tag });
+        _heatMarkTowers(R, side, ms);
+        _totemWitherWatch();
+      }, Math.max(0, f.from + f.burn - now)));
+    }
+    return;
+  }
+
+  if (f.k === 'lock' && R) {
+    _totemBreakZones.push({ ...R, until: Date.now() + (f.until - now), how: f.how || 'crumble', dir });
+    if (f.hit > now) setTimeout(() => _breakTotemsIn(R, { how: f.how || 'crumble', dir }), f.hit - now);
+  }
+}
+
+/** 되살린 토템의 바닥 장식 (범위 원 · 풀) — playCastFx와 같은 그림 */
+function _fieldTotemGround(baseId, style, c, cell, ms) {
+  const ground = _castGround();
+  const fx = style.fx;
+  if (!ground || !fx) return;
+  const sc = fx.scale || 1;
+  const el = document.createElement('img');
+  el.className = `cast-fx cast-fx-${baseId} cast-fx-ground`;
+  el.src = fx.file;
+  el.alt = '';
+  el.style.left   = (c.x - fx.hx * sc) + 'px';
+  el.style.top    = (c.y - fx.hy * sc) + 'px';
+  el.style.width  = (fx.w * sc) + 'px';
+  el.style.height = (fx.h * sc) + 'px';
+  el.dataset.tile = cell.col + ',' + cell.row;
+  el.dataset.born = Date.now();
+  ground.appendChild(el);
+  setTimeout(() => el.remove(), ms);
+}
+
+/**
+ * 이 화면이 놓친 변화에 맞춘다 — 토템이 없어졌는데 아직 서 있다 · 덜 줄었다, 불이 꺼졌는데 아직 탄다.
+ * 보통은 이 화면도 같은 연출로 같은 일을 겪는다 — 바뀐 지 FIELD_LAG_MS가 지나도 다를 때만 따른다.
+ */
+function _fieldReconcile(key, f) {
+  if (_boardOwnsKey(f.v)) return;   // 적는 쪽 — 맞출 것이 없다
+  const now = gameNow();
+  const due = t => {
+    if (now - t >= FIELD_LAG_MS) return true;
+    if (!_fieldRecheck[key]) {
+      _fieldRecheck[key] = setTimeout(() => {
+        delete _fieldRecheck[key];
+        const g = _boardGameState?.fields?.[key];
+        if (g) _fieldReconcile(key, g);
+      }, FIELD_LAG_MS - (now - t) + 50);
+    }
+    return false;
+  };
+  if (f.k === 'totem' && f.c0 != null) {
+    const R = _flipRectP1(f), tk = R.c0 + ',' + R.r0;
+    if (_totemFieldKey[tk] !== key || !totemOnTile(R.c0, R.r0)) return;
+    if (f.gone) {
+      if (due(f.gone)) _breakTotemsIn({ c0: R.c0, c1: R.c0, r0: R.r0, r1: R.r0 }, { how: f.how || 'crumble', dir: 1 });
+      return;
+    }
+    const L = _totemLife[tk];
+    if (L && (f.cut || 0) > L.cut && due(f.cutAt || 0)) _totemShorten(R.c0, R.r0, f.cut - L.cut);
+    return;
+  }
+  if (f.k === 'fire' && f.doused) {
+    const p = _firePatches.find(x => x.fieldKey === key);
+    if (p && !p.doused && due(f.doused)) _fireDouse(p, now);
+  }
 }
