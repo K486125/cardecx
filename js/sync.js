@@ -930,10 +930,11 @@ function writeEvolutionCharges(playerKey, charges) {
  * 이 시점의 상태가 최종 결과(승자·부순 타워·피해량·회복량)가 된다.
  */
 function freezeMatch() {
+  // applyLocally=false — 규칙이 거절할 수 있다 (경기 중 · 2026-10-04 보안). 서버가 받아들인 값만 화면에 반영한다
   return db.ref(`rooms/${_syncRoomCode}/gameState/endedAt`).transaction(cur => {
     if (cur === null || cur === undefined) return serverNow();
     return;   // 이미 동결됨
-  });
+  }, undefined, false);
 }
 
 /** 서버의 최신 gameState — 결과는 로컬 캐시(예상 표시 포함)가 아니라 이 값으로 계산한다 */
@@ -945,10 +946,11 @@ function readFinalGameState() {
  * 승자 기록 — 트랜잭션으로 먼저 쓴 한 명만 확정. 결과 화면은 모두 listenWinner로 받은 값을 쓴다.
  */
 function writeWinner(winner, reason) {
+  // applyLocally=false — 규칙이 승자 조건(킹 파괴 · 시간 종료 체력 · 상대 이탈)을 확인한다. 거절된 값이 화면에 먼저 뜨면 결과가 꼬인다
   return db.ref(`rooms/${_syncRoomCode}/gameState/winner`).transaction(current => {
     if (current === null || current === undefined) return winner;
     return;
-  }).then(result => {
+  }, undefined, false).then(result => {
     if (!result.committed) return;
     return db.ref(`rooms/${_syncRoomCode}/gameState/winReason`).set(reason)
       .catch(err => console.error('writeWinner reason failed:', err))

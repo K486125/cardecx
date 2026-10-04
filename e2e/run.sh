@@ -15,7 +15,7 @@ PROJECT=demo-cardecx
 SUITE="duel net netstate netreaper pending cooldown hotkeyblock touch pan mapzoom ghost
 stack status fixes5 rules6 patchnotes totem blossom arrow sword stone stonehell wind quake
 firewall firebot water botwater synergy thornsaw wallstack towers3d towerfall fxmix hellredirect
-reaper reaperbot reaperspec spectate spec3 plan4a plan4c plan4d fix3 fields"
+reaper reaperbot reaperspec spectate spec3 plan4a plan4c plan4d fix3 fields security"
 
 # ── Java 21 ────────────────────────────────────────────────
 if [ -z "${JAVA_HOME:-}" ] || ! "$JAVA_HOME/bin/java" -version 2>&1 | grep -qE '"(2[1-9]|[3-9][0-9])'; then
